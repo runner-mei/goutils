@@ -1,0 +1,170 @@
+package netutil
+
+import (
+	commons "cn/com/hengwei/pkg/legacy"
+	"encoding/json"
+	"time"
+
+	"cn/com/hengwei/pkg/goutils/httputil"
+)
+
+func getTimeout(params map[string]string, timeout time.Duration) time.Duration {
+	v, ok := params["timeout"]
+	if !ok {
+		return timeout
+	}
+
+	ret, err := time.ParseDuration(v)
+	if nil != err {
+		panic(err)
+	}
+	return ret
+}
+
+type ICMPDriver struct {
+	pingers map[string]*Pinger
+}
+
+func NewICMPDriver() *ICMPDriver {
+	return &ICMPDriver{pingers: make(map[string]*Pinger)}
+}
+
+func (self *ICMPDriver) Get(params map[string]string) httputil.Result {
+	id, ok := params["id"]
+	if !ok {
+		return util.ReturnWithIsRequired("id")
+	}
+	pinger, ok := self.pingers[id]
+	if !ok {
+		return util.ReturnWithRecordNotFound("icmp_pinger", id)
+	}
+
+	values := make([]string, 0, 10)
+	for {
+		addr, _, e := pinger.Recv(time.Duration(1))
+		if nil != e {
+			if commons.IsTimeout(e) {
+				break
+			}
+			return util.Return(values).SetError(commons.InterruptErrorCode, e.Error())
+		}
+		values = append(values, addr.String())
+	}
+	return util.Return(values)
+}
+
+func (self *ICMPDriver) Put(params map[string]string, body interface{}) httputil.Result {
+	id, ok := params["id"]
+	if !ok {
+		return util.ReturnWithIsRequired("id")
+	}
+	pinger, ok := self.pingers[id]
+	if !ok {
+		return util.ReturnWithRecordNotFound("icmp_pinger", id)
+	}
+
+	var ipList []string
+	switch bo := body.(type) {
+	case []byte:
+		ipList = make([]string, 0, 100)
+		e := json.Unmarshal(bo, &ipList)
+		if nil != e {
+			return util.ReturnWithBadRequest("read body failed, it is not []string of json - " + e.Error() + string(bo))
+		}
+	case string:
+		ipList = make([]string, 0, 100)
+		e := json.Unmarshal([]byte(bo), &ipList)
+		if nil != e {
+			return util.ReturnWithBadRequest("read body failed, it is not []string of json - " + e.Error() + bo)
+		}
+	case []string:
+		ipList = bo
+	default:
+		return util.ReturnWithBadRequest("read body failed, it is not map[string]string")
+	}
+
+	for _, ip_raw := range ipList {
+
+		ip_range, e := ParseIPRange(ip_raw)
+		if nil != e {
+			return util.ReturnWithInternalError(e.Error())
+		}
+
+		for ip_range.HasNext() {
+			e = pinger.Send(ip_range.Current().String(), nil)
+			if nil != e {
+				return util.ReturnWithInternalError(e.Error())
+			}
+		}
+	}
+	return util.Return(true)
+}
+
+func (self *ICMPDriver) Create(params map[string]string, body interface{}) httputil.Result {
+	var params2 map[string]string
+	switch bo := body.(type) {
+	case []byte:
+		e := json.Unmarshal(bo, &params2)
+		if nil != e {
+			return util.ReturnWithBadRequest("read body failed, it is not map[string]string of json - " + e.Error())
+		}
+	case string:
+		e := json.Unmarshal([]byte(bo), &params2)
+		if nil != e {
+			return util.ReturnWithBadRequest("read body failed, it is not map[string]string of json - " + e.Error())
+		}
+	case map[string]string:
+		params2 = bo
+	default:
+		return util.ReturnWithBadRequest("read body failed, it is not map[string]string")
+	}
+
+	network, _ := params2["network"]
+	if "" == network {
+		network, _ = params["network"]
+		if "" == network {
+			return util.ReturnWithIsRequired("network")
+		}
+	}
+
+	address, _ := params2["address"]
+	if "" == address {
+		address, _ = params["address"]
+	}
+
+	id := network + "," + address
+	_, ok := self.pingers[id]
+	if ok {
+		return util.ReturnWithRecordAlreadyExists(id)
+	}
+
+	echo, _ := params2["echo"]
+	if "" == echo {
+		echo, _ = params["echo"]
+		if "" == echo {
+			echo = "mfk"
+		}
+	}
+
+	icmp, err := NewPinger(network, address, []byte(echo), 256)
+	if nil != err {
+		return util.ReturnWithInternalError(err.Error())
+	}
+	self.pingers[id] = icmp
+	return util.Return(id)
+}
+
+func (self *ICMPDriver) Delete(params map[string]string) httputil.Result {
+	id, ok := params["id"]
+	if !ok {
+		return util.ReturnWithIsRequired("id")
+	}
+	pinger, ok := self.pingers[id]
+	if !ok {
+		return util.ReturnWithRecordNotFound("icmp_pinger", id)
+	}
+	delete(self.pingers, id)
+	pinger.Close()
+
+	return util.Return(true)
+}

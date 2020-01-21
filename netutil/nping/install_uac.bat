@@ -1,0 +1,1 @@
+mt.exe -manifest "nping.exe.manifest" -outputresource:"nping.exe;#1"
