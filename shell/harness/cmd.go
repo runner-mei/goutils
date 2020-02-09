@@ -2,12 +2,12 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/pkg/goutils/shell"
 	"context"
 	"errors"
 	"strings"
 	"time"
 
+	"github.com/runner-mei/goutils/shell"
 	"golang.org/x/text/encoding/simplifiedchinese"
 	"golang.org/x/text/encoding/traditionalchinese"
 	eunicode "golang.org/x/text/encoding/unicode"

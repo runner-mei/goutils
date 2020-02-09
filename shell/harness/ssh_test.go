@@ -3,7 +3,7 @@ package harness
 import (
 	"bytes"
 	"cn/com/hengwei/pkg/ds_client"
-	"cn/com/hengwei/pkg/goutils/shell"
+	"github.com/runner-mei/goutils/shell"
 	"cn/com/hengwei/sim/sshd"
 	"context"
 	"strings"

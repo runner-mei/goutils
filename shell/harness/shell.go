@@ -3,12 +3,12 @@ package harness
 import (
 	"bytes"
 	"cn/com/hengwei/pkg/ds_client"
-	"cn/com/hengwei/pkg/goutils/shell"
 	"context"
 	"io"
 	"strings"
 
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/shell"
 )
 
 type DoFunc func(conn *Shell, idx int) (bool, error)

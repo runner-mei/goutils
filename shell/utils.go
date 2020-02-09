@@ -6,9 +6,8 @@ import (
 	"io"
 	"unicode"
 
-	"cn/com/hengwei/pkg/goutils/util"
-
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/util"
 )
 
 func hasMore(bs []byte) bool {

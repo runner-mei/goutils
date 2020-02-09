@@ -118,7 +118,7 @@ func TestCleanImport(t *testing.T) {
 		{
 			imp: "./",
 			// exp: "github.com/colegion/goal/utils/path",
-			exp: "cn/com/hengwei/pkg/goutils/util",
+			exp: "github.com/runner-mei/goutils/util",
 		},
 	} {
 

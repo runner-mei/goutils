@@ -7,8 +7,7 @@ import (
 	"strconv"
 	"unicode"
 
-	"cn/com/hengwei/pkg/goutils/util"
-
+	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/errors"
 )
 

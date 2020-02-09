@@ -3,7 +3,6 @@ package harness
 import (
 	"bytes"
 	"cn/com/hengwei/pkg/ds_client"
-	"cn/com/hengwei/pkg/goutils/shell"
 	"cn/com/hengwei/sim/telnetd"
 	"context"
 	"fmt"
@@ -11,6 +10,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+	
+	"github.com/runner-mei/goutils/shell"
 )
 
 var h3cConfigurations = []string{

@@ -2,13 +2,13 @@ package harness
 
 import (
 	"cn/com/hengwei/pkg/ds_client"
-	"cn/com/hengwei/pkg/goutils/shell"
 	"context"
 	"io"
 	"os"
 	"time"
 
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/shell"
 )
 
 var dumpSSH = false

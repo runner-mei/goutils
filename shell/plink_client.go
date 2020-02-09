@@ -6,8 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"cn/com/hengwei/pkg/goutils/util"
-
+	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/errors"
 )
 
