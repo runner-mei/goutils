@@ -2,13 +2,12 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/pkg/ds_client"
-	"github.com/runner-mei/goutils/shell"
 	"cn/com/hengwei/sim/sshd"
 	"context"
 	"strings"
 	"testing"
-	"time"
+
+	"github.com/runner-mei/goutils/shell"
 )
 
 var AbcQuestion = shell.Match("abc? [Y/N]:", shell.SayNoCRLF)
@@ -31,8 +30,8 @@ func TestSSHSimSimple(t *testing.T) {
 
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -71,8 +70,8 @@ func TestSSHSimWithEnablePassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -111,8 +110,8 @@ func TestSSHSimWithEnableNonePassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -151,8 +150,8 @@ func TestSSHSimWithEnableEmptyPassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -191,8 +190,8 @@ func TestSSHSimWithYesNo(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -233,8 +232,8 @@ func TestSSHSimWithEnableWithYesNo(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -256,7 +255,7 @@ func TestSSHSimWithEnableWithYesNo(t *testing.T) {
 	testSSH(t, ctx, params)
 }
 
-func testSSH(t *testing.T, ctx context.Context, params *ds_client.SSHParam) {
+func testSSH(t *testing.T, ctx context.Context, params *SSHParam) {
 	var buf bytes.Buffer
 	c, prompt, err := DailSSH(ctx, params, ServerWriter(&buf), ClientWriter(&buf), Question(AbcQuestion.Prompts(), AbcQuestion.Do()))
 	if err != nil {
@@ -303,8 +302,8 @@ func TestSSHSimMore(t *testing.T) {
 
 	ctx := context.Background()
 
-	params := &ds_client.SSHParam{
-		Timeout: 30 * time.Second,
+	params := &SSHParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -326,7 +325,7 @@ func TestSSHSimMore(t *testing.T) {
 	testSSHMore(t, ctx, params)
 }
 
-func testSSHMore(t *testing.T, ctx context.Context, params *ds_client.SSHParam) {
+func testSSHMore(t *testing.T, ctx context.Context, params *SSHParam) {
 	var buf bytes.Buffer
 	c, prompt, err := DailSSH(ctx, params, ServerWriter(&buf), ClientWriter(&buf), Question(AbcQuestion.Prompts(), AbcQuestion.Do()))
 

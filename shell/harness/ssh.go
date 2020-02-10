@@ -1,9 +1,9 @@
 package harness
 
 import (
-	"cn/com/hengwei/pkg/ds_client"
 	"context"
 	"io"
+	"net"
 	"os"
 	"time"
 
@@ -11,9 +11,37 @@ import (
 	"github.com/runner-mei/goutils/shell"
 )
 
+func JoinHostPort(addr, port string) string {
+	if port == "" || port == "0" {
+		return addr
+	}
+	return net.JoinHostPort(addr, port)
+}
+
+type SSHParam struct {
+	Address             string `json:"address,omitempty" xml:"address,omitempty" form:"address,omitempty" query:"ssh.address,omitempty"`
+	Port                string `json:"port,omitempty" xml:"port,omitempty" form:"port,omitempty" query:"ssh.port,omitempty"`
+	UserQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"ssh.user_quest"`
+	Username            string `json:"username,omitempty" xml:"username,omitempty" form:"username,omitempty" query:"ssh.user_name"`
+	PasswordQuest       string `json:"password_quest,omitempty" xml:"password_quest,omitempty" form:"password_quest,omitempty" query:"ssh.password_quest"`
+	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"ssh.user_password,omitempty"`
+	PrivateKey          string `json:"private_key,omitempty" xml:"private_key,omitempty" form:"private_key,omitempty" query:"ssh.private_key,omitempty"`
+	Prompt              string `json:"prompt,omitempty" xml:"prompt,omitempty" form:"prompt,omitempty" query:"ssh.prompt,omitempty"`
+	EnableCommand       string `json:"enable_command,omitempty" xml:"enable_command,omitempty" form:"enable_command,omitempty" query:"ssh.enable_command,omitempty"`
+	EnablePasswordQuest string `json:"enable_password_quest,omitempty" xml:"enable_password_quest,omitempty" form:"enable_password_quest,omitempty" query:"ssh.enable_password_quest"`
+	EnablePassword      string `json:"enable_password,omitempty" xml:"enable_password,omitempty" form:"enable_password,omitempty" query:"ssh.enable_password,omitempty"`
+	EnablePrompt        string `json:"enable_prompt,omitempty" xml:"enable_prompt,omitempty" form:"enable_prompt,omitempty" query:"ssh.enable_prompt,omitempty"`
+	UseExternalSSH      bool   `json:"use_external_ssh,omitempty" xml:"use_external_ssh,omitempty" form:"use_external_ssh,omitempty" query:"ssh.use_external_ssh,omitempty"`
+	UseCRLF             bool   `json:"use_crlf,omitempty" xml:"use_crlf,omitempty" form:"use_crlf,omitempty" query:"ssh.use_crlf,omitempty"`
+}
+
+func (param *SSHParam) Host() string {
+	return JoinHostPort(param.Address, param.Port)
+}
+
 var dumpSSH = false
 
-func DailSSH(ctx context.Context, params *ds_client.SSHParam, args ...Option) (shell.Conn, []byte, error) {
+func DailSSH(ctx context.Context, params *SSHParam, args ...Option) (shell.Conn, []byte, error) {
 	var opts options
 	for _, o := range args {
 		o.apply(&opts)
@@ -102,7 +130,7 @@ func DailSSH(ctx context.Context, params *ds_client.SSHParam, args ...Option) (s
 	return sshLogin(ctx, c, params, &opts)
 }
 
-func sshLogin(ctx context.Context, c shell.Conn, params *ds_client.SSHParam, opts *options) (shell.Conn, []byte, error) {
+func sshLogin(ctx context.Context, c shell.Conn, params *SSHParam, opts *options) (shell.Conn, []byte, error) {
 	var prompts [][]byte
 	if params.Prompt != "" {
 		prompts = [][]byte{[]byte(params.Prompt)}
@@ -124,7 +152,7 @@ func sshLogin(ctx context.Context, c shell.Conn, params *ds_client.SSHParam, opt
 	return sshEnableLogin(ctx, c, params, prompt, opts)
 }
 
-func sshLoginWithExternSSH(ctx context.Context, c shell.Conn, params *ds_client.SSHParam, opts *options) (shell.Conn, []byte, error) {
+func sshLoginWithExternSSH(ctx context.Context, c shell.Conn, params *SSHParam, opts *options) (shell.Conn, []byte, error) {
 	var prompts [][]byte
 	if params.Prompt != "" {
 		prompts = [][]byte{[]byte(params.Prompt)}
@@ -156,7 +184,7 @@ func sshLoginWithExternSSH(ctx context.Context, c shell.Conn, params *ds_client.
 	return sshEnableLogin(ctx, c, params, prompt, opts)
 }
 
-func sshEnableLogin(ctx context.Context, c shell.Conn, params *ds_client.SSHParam, prompt []byte, opts *options) (shell.Conn, []byte, error) {
+func sshEnableLogin(ctx context.Context, c shell.Conn, params *SSHParam, prompt []byte, opts *options) (shell.Conn, []byte, error) {
 	var enablePasswordPrompts [][]byte
 	if params.EnablePasswordQuest != "" {
 		enablePasswordPrompts = [][]byte{[]byte(params.EnablePasswordQuest)}

@@ -1,13 +1,11 @@
 package harness
 
 import (
-	"cn/com/hengwei/pkg/ds_client"
 	"cn/com/hengwei/sim/sshd"
 	"cn/com/hengwei/sim/telnetd"
 	"context"
 	"strings"
 	"testing"
-	"time"
 
 	"github.com/google/go-cmp/cmp"
 	"golang.org/x/text/encoding/simplifiedchinese"
@@ -174,8 +172,8 @@ func TestScriptSimpleSSH(t *testing.T) {
 			port := listener.Port()
 			ctx := context.Background()
 
-			params := &ds_client.SSHParam{
-				Timeout: 30 * time.Second,
+			params := &SSHParam{
+				// Timeout: 30 * time.Second,
 				Address: "127.0.0.1",
 				Port:    port,
 				// UserQuest: "",
@@ -391,8 +389,8 @@ func TestScriptSimpleTelnet(t *testing.T) {
 			port := listener.Port()
 			ctx := context.Background()
 
-			params := &ds_client.TelnetParam{
-				Timeout: 30 * time.Second,
+			params := &TelnetParam{
+				// Timeout: 30 * time.Second,
 				Address: "127.0.0.1",
 				Port:    port,
 				// UserQuest: "",
@@ -611,8 +609,8 @@ func TestScriptSimpleSSHMore(t *testing.T) {
 			port := listener.Port()
 			ctx := context.Background()
 
-			params := &ds_client.SSHParam{
-				Timeout: 30 * time.Second,
+			params := &SSHParam{
+				// Timeout: 30 * time.Second,
 				Address: "127.0.0.1",
 				Port:    port,
 				// UserQuest: "",
@@ -760,8 +758,8 @@ func TestScriptTelnetWithGb18030(t *testing.T) {
 			port := listener.Port()
 			ctx := context.Background()
 
-			params := &ds_client.SSHParam{
-				Timeout: 30 * time.Second,
+			params := &SSHParam{
+				// Timeout: 30 * time.Second,
 				Address: "127.0.0.1",
 				Port:    port,
 				// UserQuest: "",

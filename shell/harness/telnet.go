@@ -1,19 +1,37 @@
 package harness
 
 import (
-	"cn/com/hengwei/pkg/ds_client"
 	"context"
 	"io"
 	"os"
 	"time"
 
-	"github.com/runner-mei/goutils/shell"
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/shell"
 )
+
+type TelnetParam struct {
+	Address             string `json:"address,omitempty" xml:"address,omitempty" form:"address,omitempty" query:"telnet.address,omitempty"`
+	Port                string `json:"port,omitempty" xml:"port,omitempty" form:"port,omitempty" query:"telnet.port,omitempty"`
+	UserQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"telnet.user_quest"`
+	Username            string `json:"username,omitempty" xml:"username,omitempty" form:"username,omitempty" query:"telnet.user_name"`
+	PasswordQuest       string `json:"password_quest,omitempty" xml:"password_quest,omitempty" form:"password_quest,omitempty" query:"telnet.password_quest"`
+	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"telnet.user_password,omitempty"`
+	Prompt              string `json:"prompt,omitempty" xml:"prompt,omitempty" form:"prompt,omitempty" query:"telnet.prompt,omitempty"`
+	EnableCommand       string `json:"enable_command,omitempty" xml:"enable_command,omitempty" form:"enable_command,omitempty" query:"telnet.enable_command,omitempty"`
+	EnablePasswordQuest string `json:"enable_password_quest,omitempty" xml:"enable_password_quest,omitempty" form:"enable_password_quest,omitempty" query:"telnet.enable_password_quest"`
+	EnablePassword      string `json:"enable_password,omitempty" xml:"enable_password,omitempty" form:"enable_password,omitempty" query:"telnet.enable_password,omitempty"`
+	EnablePrompt        string `json:"enable_prompt,omitempty" xml:"enable_prompt,omitempty" form:"enable_prompt,omitempty" query:"telnet.enable_prompt,omitempty"`
+	UseCRLF             bool   `json:"use_crlf,omitempty" xml:"use_crlf,omitempty" form:"use_crlf,omitempty" query:"telnet.use_crlf,omitempty"`
+}
+
+func (param *TelnetParam) Host() string {
+	return JoinHostPort(param.Address, param.Port)
+}
 
 var dumpTelnet = false
 
-func DailTelnet(ctx context.Context, params *ds_client.TelnetParam, args ...Option) (shell.Conn, []byte, error) {
+func DailTelnet(ctx context.Context, params *TelnetParam, args ...Option) (shell.Conn, []byte, error) {
 	var opts options
 	for _, o := range args {
 		o.apply(&opts)
@@ -76,7 +94,7 @@ func DailTelnet(ctx context.Context, params *ds_client.TelnetParam, args ...Opti
 	return telnetLogin(ctx, c, params, &opts)
 }
 
-func telnetLogin(ctx context.Context, c shell.Conn, params *ds_client.TelnetParam, opts *options) (shell.Conn, []byte, error) {
+func telnetLogin(ctx context.Context, c shell.Conn, params *TelnetParam, opts *options) (shell.Conn, []byte, error) {
 
 	var prompts [][]byte
 	if params.Prompt != "" {
@@ -110,7 +128,7 @@ func telnetLogin(ctx context.Context, c shell.Conn, params *ds_client.TelnetPara
 	return telnetEnableLogin(ctx, c, params, prompt, opts)
 }
 
-func telnetEnableLogin(ctx context.Context, c shell.Conn, params *ds_client.TelnetParam, prompt []byte, opts *options) (shell.Conn, []byte, error) {
+func telnetEnableLogin(ctx context.Context, c shell.Conn, params *TelnetParam, prompt []byte, opts *options) (shell.Conn, []byte, error) {
 	var enablePasswordPrompts [][]byte
 	if params.EnablePasswordQuest != "" {
 		enablePasswordPrompts = [][]byte{[]byte(params.EnablePasswordQuest)}

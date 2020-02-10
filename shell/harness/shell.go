@@ -2,7 +2,6 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/pkg/ds_client"
 	"context"
 	"io"
 	"strings"
@@ -25,8 +24,8 @@ type ExecuteResult struct {
 }
 
 type Shell struct {
-	SSHParams    *ds_client.SSHParam
-	TelnetParams *ds_client.TelnetParam
+	SSHParams    *SSHParam
+	TelnetParams *TelnetParam
 
 	IsSSHConn   bool
 	Conn        shell.Conn

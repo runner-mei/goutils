@@ -2,15 +2,13 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/pkg/ds_client"
 	"cn/com/hengwei/sim/telnetd"
 	"context"
 	"fmt"
 	_ "net/http/pprof"
 	"strings"
 	"testing"
-	"time"
-	
+
 	"github.com/runner-mei/goutils/shell"
 )
 
@@ -75,8 +73,8 @@ func TestH3C(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -133,8 +131,8 @@ func TestH3CWithNonePassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -152,7 +150,7 @@ func TestH3CWithNonePassword(t *testing.T) {
 	testTelnetH3C(t, ctx, params)
 }
 
-func testTelnetH3C(t *testing.T, ctx context.Context, params *ds_client.TelnetParam) {
+func testTelnetH3C(t *testing.T, ctx context.Context, params *TelnetParam) {
 	var buf bytes.Buffer
 	c, prompt, err := DailTelnet(ctx, params, ClientWriter(&buf), ServerWriter(&buf), Question(AbcQuestion.Prompts(), AbcQuestion.Do()))
 

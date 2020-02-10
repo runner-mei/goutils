@@ -2,12 +2,10 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/pkg/ds_client"
 	"cn/com/hengwei/sim/telnetd"
 	"context"
 	"strings"
 	"testing"
-	"time"
 )
 
 func TestTelnetSimSimple(t *testing.T) {
@@ -28,8 +26,8 @@ func TestTelnetSimSimple(t *testing.T) {
 
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -63,8 +61,8 @@ func TestTelnetSimWithEnablePassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -98,8 +96,8 @@ func TestTelnetSimWithEnableNonePassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -133,8 +131,8 @@ func TestTelnetSimWithEnableEmptyPassword(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -168,8 +166,8 @@ func TestTelnetSimWithYesNo(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -204,8 +202,8 @@ func TestTelnetSimWithEnableWithYesNo(t *testing.T) {
 	port := listener.Port()
 	ctx := context.Background()
 
-	params := &ds_client.TelnetParam{
-		Timeout: 30 * time.Second,
+	params := &TelnetParam{
+		// Timeout: 30 * time.Second,
 		Address: "127.0.0.1",
 		Port:    port,
 		// UserQuest: "",
@@ -222,7 +220,7 @@ func TestTelnetSimWithEnableWithYesNo(t *testing.T) {
 	testTelnet(t, ctx, params)
 }
 
-func testTelnet(t *testing.T, ctx context.Context, params *ds_client.TelnetParam) {
+func testTelnet(t *testing.T, ctx context.Context, params *TelnetParam) {
 	var buf bytes.Buffer
 	c, prompt, err := DailTelnet(ctx, params, ServerWriter(&buf), ClientWriter(&buf), Question(AbcQuestion.Prompts(), AbcQuestion.Do()))
 	if err != nil {
