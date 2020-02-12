@@ -23,19 +23,19 @@ func init() {
 	}
 }
 
-func Get(url string) (resp *Response, err error) {
+func Get(url string) (resp *http.Response, err error) {
 	return InsecureHttpClent.Get(url)
 }
 
-func Post(url, contentType string, body io.Reader) (resp *Response, err error) {
+func Post(url, contentType string, body io.Reader) (resp *http.Response, err error) {
 	return InsecureHttpClent.Post(url, contentType, body)
 }
 
-func PostForm(url string, data url.Values) (resp *Response, err error) {
+func PostForm(url string, data url.Values) (resp *http.Response, err error) {
 	return InsecureHttpClent.PostForm(url, data)
 }
 
-func Head(url string) (resp *Response, err error) {
+func Head(url string) (resp *http.Response, err error) {
 	return InsecureHttpClent.Head(url)
 }
 
