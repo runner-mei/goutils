@@ -6,6 +6,7 @@ import (
 	"io/ioutil"
 	"net/http"
 	nhttputil "net/http/httputil"
+	"net/url"
 
 	"github.com/runner-mei/goutils/netutil"
 	"github.com/runner-mei/goutils/util"
@@ -20,6 +21,22 @@ func init() {
 		t.DialContext = netutil.WrapDialContext(t.DialContext)
 		InsecureHttpTransport.DialContext = t.DialContext
 	}
+}
+
+func Get(url string) (resp *Response, err error) {
+	return InsecureHttpClent.Get(url)
+}
+
+func Post(url, contentType string, body io.Reader) (resp *Response, err error) {
+	return InsecureHttpClent.Post(url, contentType, body)
+}
+
+func PostForm(url string, data url.Values) (resp *Response, err error) {
+	return InsecureHttpClent.PostForm(url, data)
+}
+
+func Head(url string) (resp *Response, err error) {
+	return InsecureHttpClent.Head(url)
 }
 
 func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, respPrefix string, resp *http.Response) {
