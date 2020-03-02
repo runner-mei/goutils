@@ -39,6 +39,10 @@ func Head(url string) (resp *http.Response, err error) {
 	return InsecureHttpClent.Head(url)
 }
 
+func Do(req *http.Request) (resp *http.Response, err error) {
+	return InsecureHttpClent.Do(req)
+}
+
 func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, respPrefix string, resp *http.Response) {
 	if dumpOut == nil {
 		return
