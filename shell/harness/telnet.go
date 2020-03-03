@@ -13,7 +13,7 @@ import (
 type TelnetParam struct {
 	Address             string `json:"address,omitempty" xml:"address,omitempty" form:"address,omitempty" query:"telnet.address,omitempty"`
 	Port                string `json:"port,omitempty" xml:"port,omitempty" form:"port,omitempty" query:"telnet.port,omitempty"`
-	UserQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"telnet.user_quest"`
+	UsernameQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"telnet.user_quest"`
 	Username            string `json:"username,omitempty" xml:"username,omitempty" form:"username,omitempty" query:"telnet.user_name"`
 	PasswordQuest       string `json:"password_quest,omitempty" xml:"password_quest,omitempty" form:"password_quest,omitempty" query:"telnet.password_quest"`
 	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"telnet.user_password,omitempty"`
@@ -102,8 +102,8 @@ func telnetLogin(ctx context.Context, c shell.Conn, params *TelnetParam, opts *o
 	}
 
 	var userPrompts [][]byte
-	if params.UserQuest != "" {
-		userPrompts = [][]byte{[]byte(params.UserQuest)}
+	if params.UsernameQuest != "" {
+		userPrompts = [][]byte{[]byte(params.UsernameQuest)}
 	}
 	var passwordPrompts [][]byte
 	if params.PasswordQuest != "" {
