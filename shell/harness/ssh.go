@@ -21,7 +21,7 @@ func JoinHostPort(addr, port string) string {
 type SSHParam struct {
 	Address             string `json:"address,omitempty" xml:"address,omitempty" form:"address,omitempty" query:"ssh.address,omitempty"`
 	Port                string `json:"port,omitempty" xml:"port,omitempty" form:"port,omitempty" query:"ssh.port,omitempty"`
-	UsernameQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"ssh.user_quest"`
+	UsernameQuest       string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"ssh.user_quest"`
 	Username            string `json:"username,omitempty" xml:"username,omitempty" form:"username,omitempty" query:"ssh.user_name"`
 	PasswordQuest       string `json:"password_quest,omitempty" xml:"password_quest,omitempty" form:"password_quest,omitempty" query:"ssh.password_quest"`
 	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"ssh.user_password,omitempty"`
@@ -36,6 +36,9 @@ type SSHParam struct {
 }
 
 func (param *SSHParam) Host() string {
+	if param.Port == "" {
+		return JoinHostPort(param.Address, "22")
+	}
 	return JoinHostPort(param.Address, param.Port)
 }
 

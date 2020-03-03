@@ -13,7 +13,7 @@ import (
 type TelnetParam struct {
 	Address             string `json:"address,omitempty" xml:"address,omitempty" form:"address,omitempty" query:"telnet.address,omitempty"`
 	Port                string `json:"port,omitempty" xml:"port,omitempty" form:"port,omitempty" query:"telnet.port,omitempty"`
-	UsernameQuest           string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"telnet.user_quest"`
+	UsernameQuest       string `json:"user_quest,omitempty" xml:"user_quest,omitempty" form:"user_quest,omitempty" query:"telnet.user_quest"`
 	Username            string `json:"username,omitempty" xml:"username,omitempty" form:"username,omitempty" query:"telnet.user_name"`
 	PasswordQuest       string `json:"password_quest,omitempty" xml:"password_quest,omitempty" form:"password_quest,omitempty" query:"telnet.password_quest"`
 	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"telnet.user_password,omitempty"`
@@ -26,6 +26,9 @@ type TelnetParam struct {
 }
 
 func (param *TelnetParam) Host() string {
+	if param.Port == "" {
+		return JoinHostPort(param.Address, "23")
+	}
 	return JoinHostPort(param.Address, param.Port)
 }
 
