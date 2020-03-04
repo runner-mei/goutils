@@ -10,6 +10,8 @@ import (
 	"github.com/runner-mei/goutils/shell"
 )
 
+var ChangeNowQuestion = shell.Match("Change now? [Y/N]:", shell.SayNoCRLF)
+
 type DoFunc func(conn *Shell, idx int) (bool, error)
 
 type ExecuteResult struct {
@@ -60,6 +62,10 @@ func (s *Shell) addFail(msg string) {
 
 func (s *Shell) OnFunc(question interface{}, answer shell.DoFunc) {
 	s.questions = append(s.questions, shell.Match(question, answer))
+}
+
+func (s *Shell) AddQuestions(questions ...shell.Matcher) {
+	s.questions = append(s.questions, questions...)
 }
 
 func (s *Shell) On(question interface{}, answer DoFunc) {
