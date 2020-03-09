@@ -27,7 +27,18 @@ func SplitLines(bs []byte) [][]byte {
 
 	lines := make([][]byte, 0, 10)
 	for scanner.Scan() {
-		lines = append(lines, scanner.Bytes())
+		line := scanner.Bytes()
+		if len(line) > 0 {
+			if line[len(line)-1] == '\n' {
+				line = line[:len(line)-1]
+			}
+		}
+		if len(line) > 0 {
+			if line[len(line)-1] == '\r' {
+				line = line[:len(line)-1]
+			}
+		}
+		lines = append(lines, line)
 	}
 
 	if nil != scanner.Err() {
