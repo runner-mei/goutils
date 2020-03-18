@@ -17,12 +17,6 @@ import (
 	"github.com/runner-mei/errors"
 )
 
-// const (
-// 	ErrValueNotFoundCode = errors.ErrValueNotFound.ErrorCode()
-// 	ErrValueNullCode     = errors.ErrValueNull.ErrorCode()
-// 	ErrTypeErrorCode     = errors.ErrTypeError.ErrorCode()
-// )
-
 var ErrValueNotFound = errors.ErrValueNotFound
 var ErrValueNull = errors.ErrValueNull
 var NewTypeError = errors.NewTypeError
