@@ -12,8 +12,9 @@ require (
 	github.com/mozillazg/go-slugify v0.2.0
 	github.com/mozillazg/go-unidecode v0.1.1 // indirect
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
-	github.com/runner-mei/errors v0.0.0-20200110030217-ce67aa3512c3
+	github.com/runner-mei/errors v0.0.0-20200318090343-75b0baa0f222
 	github.com/runner-mei/resty v0.0.0-20191102140647-fa73802f0b7f
 	golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340
+	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d // indirect
 	golang.org/x/text v0.3.2
 )
