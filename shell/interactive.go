@@ -33,12 +33,25 @@ var (
 	anonymousPassword = []byte("<<anonymous>>")
 	nonePassword      = []byte("<<none>>")
 	emptyPassword     = []byte("<<empty>>")
+	defaultEnableCmd  = []byte("enable")
 
-	defaultUserPrompts     = [][]byte{[]byte("Username:"), []byte("username:"), []byte("login:"), []byte("login as:")}
+	defaultUserPrompts = [][]byte{
+		[]byte("Username:"),
+		[]byte("username:"),
+		[]byte("login:"),
+		[]byte("login as:")}
 	defaultPasswordPrompts = [][]byte{[]byte("Password:"), []byte("password:")}
 	defaultPrompts         = [][]byte{[]byte(">"), []byte("$"), []byte("#")}
-	defaultErrorPrompts    = [][]byte{[]byte("Bad secrets"), []byte("Login invalid"), []byte("Access denied"), []byte("Login failed!"), []byte("Error:")}
-	defaultEnableCmd       = []byte("enable")
+	defaultErrorPrompts    = [][]byte{
+		[]byte("Bad secrets"),
+		[]byte("Login invalid"),
+		[]byte("Access denied"),
+		[]byte("Login failed"),
+		[]byte("Error:")}
+	defaultPermissionPrompts = [][]byte{
+		[]byte("Invalid input detected at '^' marker"),
+		[]byte("Error: Too many parameters found at '^' position."),
+	}
 )
 
 var SayYesCRLF = func(conn Conn, idx int) (bool, error) {
@@ -230,7 +243,7 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 
 	status := 0
 
-	copyed := make([]Matcher, len(matchs)+4)
+	copyed := make([]Matcher, len(matchs)+5)
 	copyed[0] = Match(userPrompts, func(c Conn, nidx int) (bool, error) {
 		if e := conn.Sendln(username); e != nil {
 			return false, errors.Wrap(e, "send username failed")
@@ -259,7 +272,12 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 		return false, nil
 	})
 
-	copy(copyed[4:], matchs)
+	copyed[4] = Match(defaultPermissionPrompts, func(c Conn, nidx int) (bool, error) {
+		status = 5
+		return false, nil
+	})
+
+	copy(copyed[5:], matchs)
 
 	for i := 0; ; i++ {
 		if i >= 10 {
@@ -290,6 +308,15 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 			}
 
 			return nil, errors.New("invalid password: \r\n" + ToHexStringIfNeed(received))
+		}
+
+		if status == 5 {
+			received := buf.Bytes()
+			if len(received) == 0 {
+				return nil, errors.ErrPermission
+			}
+
+			return nil, errors.WrapWithSuffix(errors.ErrPermission, "\r\n"+ToHexStringIfNeed(received))
 		}
 	}
 }
