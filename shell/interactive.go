@@ -7,8 +7,8 @@ import (
 	"strconv"
 	"unicode"
 
-	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/util"
 )
 
 const YesOrNo = "? [Y/N]:"
@@ -191,7 +191,6 @@ func Expect(ctx context.Context, conn Conn, matchs ...Matcher) error {
 		}
 
 		if foundMatchIndex < 0 {
-			fmt.Println(idx, matchIdxs)
 			return errors.New("read util '" + string(bytes.Join(prompts, []byte(","))) + "' failed, return index is '" + strconv.Itoa(idx) + "'")
 		}
 
@@ -231,7 +230,7 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 
 	status := 0
 
-	copyed := make([]Matcher, len(matchs)+3)
+	copyed := make([]Matcher, len(matchs)+4)
 	copyed[0] = Match(userPrompts, func(c Conn, nidx int) (bool, error) {
 		if e := conn.Sendln(username); e != nil {
 			return false, errors.Wrap(e, "send username failed")
@@ -254,7 +253,13 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 		status = 3
 		return false, nil
 	})
-	copy(copyed[3:], matchs)
+
+	copyed[3] = Match(defaultErrorPrompts, func(c Conn, nidx int) (bool, error) {
+		status = 4
+		return false, nil
+	})
+
+	copy(copyed[4:], matchs)
 
 	for i := 0; ; i++ {
 		if i >= 10 {
@@ -262,7 +267,7 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 		}
 		err := Expect(ctx, conn, copyed...)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "user login fail")
 		}
 
 		if status == 3 {
@@ -276,6 +281,15 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 				return nil, errors.New("read prompt '" + string(bytes.Join(prompts, []byte(","))) + "' failed: \r\n" + ToHexStringIfNeed(received))
 			}
 			return prompt, nil
+		}
+
+		if status == 4 {
+			received := buf.Bytes()
+			if len(received) == 0 {
+				return nil, errors.New("invalid password")
+			}
+
+			return nil, errors.New("invalid password: \r\n" + ToHexStringIfNeed(received))
 		}
 	}
 }

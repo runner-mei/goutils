@@ -133,15 +133,18 @@ func TelnetWrap(c *Telnet, tees, teec io.Writer) *ConnWrapper {
 		for {
 			b, err := c.ReadByte()
 			if err != nil {
-
 				c.errc <- err
 				close(c.errc)
+
+				p.Close()
 				break
 			}
 
 			if err = p.WriteByte(b); err != nil {
 				c.errc <- err
 				close(c.errc)
+
+				p.Close()
 				break
 			}
 
