@@ -98,7 +98,6 @@ func DailTelnet(ctx context.Context, params *TelnetParam, args ...Option) (shell
 }
 
 func telnetLogin(ctx context.Context, c shell.Conn, params *TelnetParam, opts *options) (shell.Conn, []byte, error) {
-
 	var prompts [][]byte
 	if params.Prompt != "" {
 		prompts = [][]byte{[]byte(params.Prompt)}

@@ -430,6 +430,12 @@ func Exec(ctx context.Context, conn Conn, prompt, cmd []byte) ([]byte, error) {
 	}
 	bs := buf.Bytes()
 	bs = bs[:len(bs)-len(prompt)]
+
+	for _, prompt := range defaultPermissionPrompts {
+		if bytes.Contains(bs, prompt) {
+			return nil, errors.WrapWithSuffix(errors.ErrPermission, string(prompt))
+		}
+	}
 	return bs, nil
 }
 
