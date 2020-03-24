@@ -302,7 +302,6 @@ func (s *Shell) Exec(ctx context.Context, command string) error {
 }
 
 func Exec(ctx context.Context, s *Shell, command string) (*ExecuteResult, error) {
-
 	var in strings.Builder
 	var out strings.Builder
 

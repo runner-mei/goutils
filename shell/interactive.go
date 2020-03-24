@@ -76,6 +76,12 @@ var ReturnOK = func(conn Conn, idx int) (bool, error) {
 	return false, nil
 }
 
+var ReturnErr = func(err error) func(conn Conn, idx int) (bool, error) {
+	return func(conn Conn, idx int) (bool, error) {
+		return false, err
+	}
+}
+
 var (
 	StorKeyInCache  = Match("Store key in cache? (y/n)", SayYes)
 	More            = Match(MorePrompts, SayYes)
@@ -87,6 +93,13 @@ var (
 		More,
 	}
 )
+
+func init() {
+	for _, prompt := range defaultPermissionPrompts {
+		DefaultMatchers = append(DefaultMatchers,
+			Match(prompt, ReturnErr(errors.WrapWithSuffix(errors.ErrPermission, string(prompt)))))
+	}
+}
 
 func IsNonePassword(password []byte) bool {
 	return bytes.Equal(password, nonePassword) || bytes.Equal(password, anonymousPassword)
