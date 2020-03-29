@@ -374,6 +374,40 @@ func (p *InplaceReader) Read([]byte) (int, error) {
 	return ret, io.EOF
 }
 
+func ToStrings(o interface{}) []string {
+	if ss, ok := o.([]string); ok {
+		return ss
+	}
+
+	if ss, ok := o.([]interface{}); ok {
+		var ipList []string
+		for _, i := range ss {
+			ipList = append(ipList, fmt.Sprint(i))
+		}
+		return ipList
+	}
+
+	s, ok := o.(string)
+	if ok {
+
+		ss, err := SplitStrings([]byte(s))
+		if err != nil {
+			panic(err)
+		}
+		return ss
+	}
+
+	bs, ok := o.([]byte)
+	if !ok {
+		panic(fmt.Errorf("o is unsupport type - %T %s", o, o))
+	}
+	ss, err := SplitStrings(bs)
+	if err != nil {
+		panic(err)
+	}
+	return ss
+}
+
 func SplitStrings(bs []byte) ([]string, error) {
 	if len(bs) == 0 {
 		return nil, nil
