@@ -25,13 +25,12 @@ import (
 	"time"
 
 	"github.com/runner-mei/errors"
-	"github.com/runner-mei/goutils/human"
-	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/goutils/as"
+	"github.com/runner-mei/goutils/human"
 	"github.com/runner-mei/goutils/tid"
+	"github.com/runner-mei/goutils/util"
 	"golang.org/x/text/transform"
 )
-
 
 func QueryEscape(charset, content string) string {
 	encoding := util.GetCharset(charset)
@@ -302,7 +301,7 @@ var TemplateFuncs = template.FuncMap{
 		return u64 / 8
 	},
 	"formatFloat": formatFloat,
-	"formatTime": util.TimeFormatWithJavaStyle,
+	"formatTime":  util.TimeFormatWithJavaStyle,
 	"formatGoTime": func(t time.Time, layout string) string {
 		return t.Format(layout)
 	},
