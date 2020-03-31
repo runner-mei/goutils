@@ -43,7 +43,7 @@ func Do(req *http.Request) (resp *http.Response, err error) {
 	return InsecureHttpClent.Do(req)
 }
 
-func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, respPrefix string, resp *http.Response) {
+func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, reqBody io.Reader, respPrefix string, resp *http.Response, respBody io.Reader) {
 	if dumpOut == nil {
 		return
 	}
@@ -53,6 +53,10 @@ func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, respPrefix str
 		io.WriteString(dumpOut, e.Error())
 	} else {
 		dumpOut.Write(bs)
+		if reqBody != nil {
+			io.Copy(dumpOut, reqBody)
+			dumpOut.Write([]byte("\r\n"))
+		}
 	}
 
 	io.WriteString(dumpOut, respPrefix)
@@ -61,15 +65,20 @@ func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, respPrefix str
 	} else {
 		dumpOut.Write(bs)
 
-		body, err := ioutil.ReadAll(resp.Body)
-		if err != nil {
-			io.WriteString(dumpOut, "***")
-			io.WriteString(dumpOut, err.Error())
-		} else {
-			dumpOut.Write(body)
+		if respBody != nil {
+			io.Copy(dumpOut, respBody)
 			dumpOut.Write([]byte("\r\n"))
+		} else {
+			body, err := ioutil.ReadAll(resp.Body)
+			if err != nil {
+				io.WriteString(dumpOut, "***")
+				io.WriteString(dumpOut, err.Error())
+			} else {
+				dumpOut.Write(body)
+				dumpOut.Write([]byte("\r\n"))
 
-			resp.Body = util.ToReadCloser(bytes.NewReader(body))
+				resp.Body = util.ToReadCloser(bytes.NewReader(body))
+			}
 		}
 		// dumpOut.Write(body)
 	}
