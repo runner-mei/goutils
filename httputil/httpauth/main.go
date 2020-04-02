@@ -12,6 +12,7 @@ import (
 	"net/http"
 	"net/http/cookiejar"
 	"net/url"
+	"path"
 	"strconv"
 	"strings"
 	"time"
@@ -378,6 +379,63 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 
 			method, posturl, values, err := ParseForm(bytes.NewReader(body))
 			if err != nil {
+				if bytes.Contains(body, []byte("FRAMESET")) {
+					urls, err := ParseFrameset(bytes.NewReader(body))
+					if err == nil {
+						for _, aUrl := range urls {
+							if !strings.HasPrefix(aUrl, "https://") && !strings.HasPrefix(aUrl, "http://") {
+								u, _ := url.Parse(loginURL)
+								u.RawQuery = ""
+								if quest := strings.IndexRune(aUrl, '?'); quest >= 0 {
+									u.RawQuery = aUrl[quest+1:]
+									aUrl = aUrl[:quest]
+								}
+
+								if strings.HasPrefix(aUrl, "/") {
+									u.Path = aUrl
+								} else {
+									u.Path = path.Join(path.Dir(u.Path), aUrl)
+									// dumpOut.Write([]byte("\r\n===========" + path.Dir(u.Path) + "," + aUrl))
+								}
+								aUrl = u.String()
+							}
+
+							req, err := http.NewRequest(http.MethodGet, aUrl, nil)
+							if err != nil {
+								logMessages = append(logMessages, "创建登录请求失败", err.Error())
+								return nil, logMessages, err
+							}
+
+							resp, err := client.Do(req)
+							if nil != err {
+								logMessages = append(logMessages, "发送登录请求失败", err.Error())
+								return nil, logMessages, err
+							}
+
+							body, err := ioutil.ReadAll(resp.Body)
+							if err != nil {
+								logMessages = append(logMessages, "发送登录请求成功， 但读响应失败")
+								return nil, logMessages, errors.New("status code is '" + resp.Status + "' - failed to read body")
+							}
+
+							tryCount++
+							httputil.Dump(dumpOut,
+								"\r\n========= "+strconv.Itoa(2+tryCount)+" DumpRequest =========\r\n", req, nil,
+								"\r\n========= "+strconv.Itoa(2+tryCount)+" DumpResponse =========\r\n", resp, bytes.NewReader(body))
+
+							if bytes.Contains(body, []byte(params.ExceptedContent)) {
+								logMessages = append(logMessages, "发送登录请求成功")
+								return loginResp, logMessages, nil
+							}
+						}
+
+						logMessages = append(logMessages, "发送登录请求成功， 但响应不包含指定的字符")
+						return nil, logMessages, errors.New("excepted content not found in http body")
+					}
+				}
+			}
+
+			if err != nil {
 				if dumpOut != nil {
 					io.WriteString(dumpOut, err.Error())
 				}
@@ -513,4 +571,25 @@ func ParseForm(body io.Reader) (method, posturl string, values url.Values, err e
 		err = errors.New("尝试解析响应，看看是不是可以自动提交请求, 发现 method 为空")
 	}
 	return
+}
+
+func ParseFrameset(body io.Reader) ([]string, error) {
+	doc, err := goquery.NewDocumentFromReader(body)
+	if nil != err {
+		return nil, errors.New("failed to parse login page, " + err.Error())
+	}
+
+	var urls []string
+	doc.Find("FRAME").Each(func(idx int, frame *goquery.Selection) {
+		for _, node := range frame.Nodes {
+			src := attributeValue(node, "SRC")
+			if src == "" {
+				src = attributeValue(node, "src")
+			}
+			if src != "" {
+				urls = append(urls, src)
+			}
+		}
+	})
+	return urls, nil
 }
