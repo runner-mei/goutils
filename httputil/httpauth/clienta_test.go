@@ -16,7 +16,7 @@ func makeClientA() *http.ServeMux {
 
 	mux.Handle("/irr/portal", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
-			Name:  "IPCZQX03a36c6c0a",
+			Name:  "IPCZQX037arbc",
 			Value: "0000df010a80040f97f58c013fa485e1f4b2d6a9",
 			Path:  "/",
 		})
@@ -40,13 +40,13 @@ func makeClientA() *http.ServeMux {
 			Path:  "/nxxx",
 		})
 
-		cookie, err := r.Cookie("IPCZQX03a36c6c0a")
+		cookie, err := r.Cookie("IPCZQX037arbc")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return
 		}
 		if cookie == nil {
-			http.Error(w, "IPCZQX03a36c6c0a is missing", http.StatusInternalServerError)
+			http.Error(w, "IPCZQX037arbc is missing", http.StatusInternalServerError)
 			return
 		}
 
