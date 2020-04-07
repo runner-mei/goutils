@@ -128,11 +128,8 @@ func (c *ConnWrapper) readUntil(buf *bytes.Buffer, delims [][]byte) (int, error)
 				// 	p[i] = p[i][1:]
 				// }
 			} else {
-
 				// fmt.Println("b=", string([]byte{b}), ", end=", string(p[i]))
-
 				p[i] = p[i][1:]
-
 			}
 
 			if len(p[i]) == 0 {
@@ -143,6 +140,7 @@ func (c *ConnWrapper) readUntil(buf *bytes.Buffer, delims [][]byte) (int, error)
 						continue
 					}
 				}
+
 				return i, nil
 			}
 		}
@@ -349,7 +347,13 @@ var _ io.Writer = &wout{}
 func SkipHits(bs, delim []byte) bool {
 	//log.Println("==================== SkipHits test", string(bs))
 
-	if bytes.HasSuffix(bs, []byte("<myuser>")) || bytes.HasSuffix(bs, []byte("<mypassword>")) {
+	if bytes.HasSuffix(bs, []byte("Last login:")) ||
+		bytes.HasSuffix(bs, []byte("last login:")) {
+		return true
+	}
+
+	if bytes.HasSuffix(bs, []byte("<myuser>")) ||
+		bytes.HasSuffix(bs, []byte("<mypassword>")) {
 		//log.Println("==================== skip", string(bs))
 		return true
 	}

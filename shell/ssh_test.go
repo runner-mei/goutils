@@ -265,20 +265,21 @@ func TestSSHSimWithEnableWithYesNo(t *testing.T) {
 	testSimWithEnable(t, ctx, conn, prompt, "enable", "testsx")
 }
 
-func testSimSimple(t *testing.T, ctx context.Context, conn Conn, prompt []byte) {
+func testSimSimple(t *testing.T, ctx context.Context, conn Conn, prompt []byte) []byte {
 	if string(prompt) != "ABC>" {
 		t.Errorf("want 'ABC>' got %s", prompt)
-		return
+		return nil
 	}
 
 	output, err := Exec(ctx, conn, prompt, []byte("echo abcd"))
 	if err != nil {
 		t.Error(err)
-		return
+		return nil
 	}
 	if !strings.Contains(string(output), "print abcd") {
 		t.Errorf("want 'print abcd' got %s", output)
 	}
+	return output
 }
 
 func testSimWithEnable(t *testing.T, ctx context.Context, conn Conn, prompt []byte, enableCmd, enablePwd string) {
