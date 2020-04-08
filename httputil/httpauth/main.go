@@ -452,7 +452,15 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 		}
 
 		if params.AutoRedirectEnabled == "" || params.AutoRedirectEnabled == "auto" {
-			for _, locationHref := range []string{"parent.location.href=\"", "window.location.href=\""} {
+			for _, locationHref := range []string{"parent.location.href=\"",
+				"window.location.href=\"",
+				"window.location.href =\"",
+				"window.location.href= \"",
+				"window.location.href = \"",
+				"window.location=\"",
+				"window.location =\"",
+				"window.location= \"",
+				"window.location = \""} {
 				if strings.HasPrefix(params.ExceptedContent, locationHref) {
 					urlStr := strings.TrimPrefix(params.ExceptedContent, locationHref)
 					urlStr = strings.TrimSuffix(strings.TrimSpace(urlStr), ";")
