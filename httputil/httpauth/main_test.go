@@ -7,7 +7,6 @@ import (
 )
 
 func TestLoginMy(t *testing.T) {
-
 	params := &LoginParams{
 		Protocol:   "https",
 		Address:    "127.0.0.1",

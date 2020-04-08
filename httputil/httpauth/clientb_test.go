@@ -12,6 +12,17 @@ import (
 func makeClientB(out map[string]int) *http.ServeMux {
 	var mux = &http.ServeMux{}
 
+	mux.Handle("/bizxxxx/", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.WriteHeader(http.StatusOK)
+		io.WriteString(w, `<HTML>
+  <HEAD>
+    <script>
+               window.location="servlet/portal?render=on";
+         </script>
+  </HEAD>
+</HTML>`)
+	}))
+
 	mux.Handle("/bizxxxx/servlet/portal", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		http.SetCookie(w, &http.Cookie{
 			Name:  "username",
@@ -211,6 +222,43 @@ func TestLoginClientB1(t *testing.T) {
 	t.Log(out.String())
 }
 
+func TestLoginClientB2(t *testing.T) {
+	outResult := map[string]int{}
+	mux := makeClientB(outResult)
+	hsrv := httptest.NewServer(mux)
+	defer hsrv.Close()
+
+	u, _ := url.Parse(hsrv.URL)
+
+	params := &LoginParams{
+		Protocol:   "http",
+		Address:    u.Host,
+		WelcomeURL: "/bizxxxx/",
+		LoginURL:   "/bizxxxx/servlet/webacc",
+		Username:   "00020023",
+		Password:   "qwer123$",
+		// PasswordCrypto:      "base64",
+		UsernameArgname:     "username",
+		PasswordArgname:     "password",
+		ReadForm:            true,
+		ExceptedContent:     `控制中心`,
+		Values:              map[string]string{"tree": "10.128.7.120"},
+		AutoRedirectEnabled: "false",
+	}
+
+	client := New()
+	var out bytes.Buffer
+	_, msgs, err := Login(nil, &client, params, &out)
+	if err != nil {
+		t.Log(msgs)
+		t.Log(out.String())
+		t.Error(err)
+		return
+	}
+	t.Log(msgs)
+	t.Log(out.String())
+}
+
 const (
 	okHtml = `
 
@@ -237,7 +285,14 @@ const (
 
     </HTML>`
 
-	formHtml = `<!-- ========= START imaneMFrameScripts tag ========== -->
+	formHtml = `
+
+
+
+
+
+
+  <!-- ========= START imaneMFrameScripts tag ========== -->
 <SCRIPT>
 BrowserCharset='utf-8';
 ParentWindowChangedErrorAlertMessage = '未保存更改。';

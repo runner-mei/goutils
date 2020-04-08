@@ -16,6 +16,7 @@ import (
 	"strconv"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/runner-mei/goutils/httputil"
@@ -98,6 +99,137 @@ func New() http.Client {
 	}
 }
 
+func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (url.Values, []string, error) {
+	baseurl := params.BaseURL()
+
+	action := http.MethodGet
+	if params.WelcomeMethod != "" {
+		action = params.WelcomeMethod
+	}
+
+	last := params.WelcomeURL
+	rawWelcomeURL := params.WelcomeURL
+
+	var logMessages []string
+	for retry := 0; retry < 10; retry++ {
+		welcomeURL := strings.ToLower(rawWelcomeURL)
+		if strings.HasPrefix(welcomeURL, "https://") || strings.HasPrefix(welcomeURL, "http://") {
+			welcomeURL = rawWelcomeURL
+		} else if retry == 0 {
+			welcomeURL = urlutil.Join(baseurl, rawWelcomeURL)
+		} else {
+			if strings.HasPrefix(welcomeURL, "/") {
+				welcomeURL = urlutil.Join(baseurl, last, rawWelcomeURL)
+			} else {
+				welcomeURL = urlutil.Join(baseurl, path.Dir(last), rawWelcomeURL)
+			}
+		}
+
+		welcomeReq, err := http.NewRequest(action, welcomeURL, nil)
+		if err != nil {
+			return nil, []string{"创建登录首页请求失败", err.Error()}, err
+		}
+		welcomeReq = welcomeReq.WithContext(ctx)
+		if params.Referrer == "" {
+			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
+				params.Referrer = req.URL.String()
+				if req.URL.User != nil {
+					// This is not very efficient, but is the best we can
+					// do without:
+					// - introducing a new method on URL
+					// - creating a race condition
+					// - copying the URL struct manually, which would cause
+					//   maintenance problems down the line
+					auth := req.URL.User.String() + "@"
+					params.Referrer = strings.Replace(params.Referrer, auth, "", 1)
+				}
+				return nil
+			}
+		}
+
+		welcomeResp, err := client.Do(welcomeReq)
+		if nil != err {
+			return nil, []string{"创建登录首页请求失败", err.Error()}, err
+		}
+
+		client.CheckRedirect = nil
+
+		logMessages = append(logMessages, "访问"+rawWelcomeURL+" 成功")
+
+		body, err := ioutil.ReadAll(welcomeResp.Body)
+		welcomeResp.Body.Close()
+		if err != nil {
+			return nil, append(logMessages, "读登录首页内容失败", err.Error()), err
+		}
+
+		httputil.Dump(dumpOut,
+			"========= 1 DumpRequest =========\r\n", welcomeReq, nil,
+			"\r\n========= 1 DumpResponse =========\r\n", welcomeResp, bytes.NewReader(body))
+
+		if http.StatusOK != welcomeResp.StatusCode {
+			return nil, append(logMessages, "登录首页的响应码不正确"),
+				errors.New("status code is '" + welcomeResp.Status + "' - " + string(body))
+		}
+
+		if !params.ReadForm {
+			return nil, append(logMessages, "跳过登录首页的解析"), nil
+		}
+
+		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
+		if nil != err {
+			return nil, append(logMessages, "解析登录首页失败", err.Error()), errors.New("failed to parse login page, " + err.Error())
+		}
+
+		if params.FormLocation == "" {
+			params.FormLocation = "form"
+		}
+
+		values := url.Values{}
+		formCount := 0
+		doc.Find(params.FormLocation).Each(func(idx int, form *goquery.Selection) {
+			if nodes := form.Nodes; len(nodes) > 0 {
+				action = strings.ToUpper(attributeValueWithDefaultValue(nodes[0], "method", "POST"))
+			}
+
+			formCount++
+			form.Find("input[type=\"hidden\"]").Each(func(idx int, input *goquery.Selection) {
+				for _, node := range input.Nodes {
+					values[attributeValue(node, "name")] = []string{attributeValue(node, "value")}
+				}
+			})
+		})
+		if formCount == 1 {
+			return values, append(logMessages, "解析登录首页时找到"+strconv.Itoa(len(values))+"个表单项"), nil
+		}
+
+		if formCount > 1 {
+			if err == nil {
+				return nil, append(logMessages, "解析登录首页时找到多个表单"), errors.New("'" + params.FormLocation + "' is muti choice")
+			}
+			return nil, append(logMessages, "解析登录首页时找到多个表单", err.Error()), err
+		}
+
+		redirectURL := ParseJsRedirect(body, []string{
+			"parent.location.href",
+			"window.location.href",
+			"window.location",
+		})
+		if redirectURL == "" {
+			if err == nil {
+				return nil, append(logMessages, "解析登录首页时没有找到表单"), errors.New("'" + params.FormLocation + "' isn't found")
+			}
+			return nil, append(logMessages, "解析登录首页时没有找到表单", err.Error()), err
+		}
+
+		logMessages = append(logMessages, "解析内容时发现有重定向，开始重定向")
+		last = rawWelcomeURL
+		rawWelcomeURL = redirectURL
+		action = http.MethodGet
+	}
+
+	return nil, logMessages, errors.New("重定向次数太多了")
+}
+
 func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, []string, error) {
 	baseurl := params.BaseURL()
 
@@ -121,125 +253,13 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 	}
 
 	values := url.Values{}
-	var action string
 	var logMessages []string
+	var err error
 
 	if params.WelcomeURL != "" {
-		action = "GET"
-		if params.WelcomeMethod != "" {
-			action = params.WelcomeMethod
-		}
-
-		welcomeURL := strings.ToLower(params.WelcomeURL)
-		if strings.HasPrefix(welcomeURL, "https://") || strings.HasPrefix(welcomeURL, "http://") {
-			welcomeURL = params.WelcomeURL
-		} else {
-			welcomeURL = urlutil.Join(baseurl, params.WelcomeURL)
-		}
-
-		welcomeReq, err := http.NewRequest(action, welcomeURL, nil)
+		values, logMessages, err = readWelcome(ctx, client, params, dumpOut)
 		if err != nil {
-			logMessages = append(logMessages, "创建登录首页请求失败", err.Error())
 			return nil, logMessages, err
-		}
-		welcomeReq = welcomeReq.WithContext(ctx)
-		action = ""
-
-		if params.Referrer == "" {
-			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
-				params.Referrer = req.URL.String()
-				if req.URL.User != nil {
-					// This is not very efficient, but is the best we can
-					// do without:
-					// - introducing a new method on URL
-					// - creating a race condition
-					// - copying the URL struct manually, which would cause
-					//   maintenance problems down the line
-					auth := req.URL.User.String() + "@"
-					params.Referrer = strings.Replace(params.Referrer, auth, "", 1)
-				}
-				return nil
-			}
-		}
-
-		welcomeResp, err := client.Do(welcomeReq)
-		if nil != err {
-			logMessages = append(logMessages, "访问登录首页失败", err.Error())
-			return nil, logMessages, err
-		}
-
-		logMessages = append(logMessages, "访问登录首页成功")
-		client.CheckRedirect = nil
-
-		body, err := ioutil.ReadAll(welcomeResp.Body)
-		welcomeResp.Body.Close()
-		if err != nil {
-			logMessages = append(logMessages, "解析登录首页失败", err.Error())
-			return nil, logMessages, err
-		}
-
-		if http.StatusOK != welcomeResp.StatusCode {
-			logMessages = append(logMessages, "解析登录首页响应码不正确")
-			return nil, logMessages, errors.New("status code is '" + welcomeResp.Status + "' - " + string(body))
-		}
-
-		httputil.Dump(dumpOut,
-			"========= 1 DumpRequest =========\r\n", welcomeReq, nil,
-			"\r\n========= 1 DumpResponse =========\r\n", welcomeResp, bytes.NewReader(body))
-
-		if params.ReadForm {
-			doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
-			if nil != err {
-				logMessages = append(logMessages, "解析登录首页失败", err.Error())
-				return nil, logMessages, errors.New("failed to parse login page, " + err.Error())
-			}
-			//dumpNodesFromDocument(doc, "#user_login")
-			//dumpNodesFromDocument(doc, "#user_password")
-
-			if params.FormLocation == "" {
-				params.FormLocation = "form"
-			}
-
-			//<form accept-charset="UTF-8" action="/login" class="login-box" id="new_user" method="post">
-			// var formNode *html.Node
-			// if sl := doc.Find(params.FormLocation); nil == sl || 0 == sl.Size() {
-			//  return nil, errors.New("'"+params.FormLocation+"' isn't found")
-			// } else if nodes := sl.Nodes; 1 != len(nodes) {
-			//  return nil, errors.New("'"+params.FormLocation+"' is muti choice")
-			// } else {
-			//  formNode = nodes[0]
-			// }
-
-			count := 0
-			doc.Find(params.FormLocation).Each(func(idx int, form *goquery.Selection) {
-				if nodes := form.Nodes; len(nodes) > 0 {
-					action = strings.ToUpper(attributeValueWithDefaultValue(nodes[0], "method", "POST"))
-				}
-
-				count++
-				form.Find("input[type=\"hidden\"]").Each(func(idx int, input *goquery.Selection) {
-					for _, node := range input.Nodes {
-						values[attributeValue(node, "name")] = []string{attributeValue(node, "value")}
-					}
-				})
-			})
-
-			switch {
-			case count == 0:
-				if err == nil {
-					logMessages = append(logMessages, "解析登录首页时没有找到表单")
-				} else {
-					logMessages = append(logMessages, "解析登录首页时没有找到表单", err.Error())
-				}
-				return nil, logMessages, errors.New("'" + params.FormLocation + "' isn't found")
-			case count > 1:
-				if err == nil {
-					logMessages = append(logMessages, "解析登录首页时找到多个表单")
-				} else {
-					logMessages = append(logMessages, "解析登录首页时找到多个表单", err.Error())
-				}
-				return nil, logMessages, errors.New("'" + params.FormLocation + "' is muti choice")
-			}
 		}
 	}
 
@@ -258,16 +278,13 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 		values[passwordform] = []string{base64.StdEncoding.EncodeToString([]byte(params.Password))}
 	}
 
-	if 0 != len(params.Values) {
-		for k, v := range params.Values {
-			values[k] = []string{v}
-		}
+	for k, v := range params.Values {
+		values[k] = []string{v}
 	}
+
+	var action = "POST"
 	if params.LoginMethod != "" {
 		action = params.LoginMethod
-	}
-	if action == "" {
-		action = "POST"
 	}
 
 	loginURL := strings.ToLower(params.LoginURL)
@@ -600,4 +617,48 @@ func ParseFrameset(body io.Reader) ([]string, error) {
 		}
 	})
 	return urls, nil
+}
+
+func ParseJsRedirect(body []byte, tokens []string) string {
+	foundIdx := -1
+	for _, token := range tokens {
+		location := []byte(token)
+		idx := bytes.Index(body, location)
+		if idx >= 0 {
+			foundIdx = idx + len(location)
+			break
+		}
+	}
+	if foundIdx < 0 {
+		return ""
+	}
+	body = body[foundIdx:]
+	body = bytes.TrimLeftFunc(body, unicode.IsSpace)
+	if len(body) == 0 {
+		return ""
+	}
+
+	if body[0] != '=' {
+		return ""
+	}
+
+	body = body[1:]
+	body = bytes.TrimLeftFunc(body, unicode.IsSpace)
+	if len(body) == 0 {
+		return ""
+	}
+
+	idx := bytes.Index(body, []byte("\n"))
+	if idx < 0 {
+		return ""
+	}
+	body = bytes.TrimSpace(body[:idx])
+	if len(body) == 0 {
+		return ""
+	}
+
+	body = bytes.Trim(body, ";")
+	body = bytes.TrimSpace(body)
+	body = bytes.Trim(body, "\"")
+	return string(body)
 }
