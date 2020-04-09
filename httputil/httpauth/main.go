@@ -129,6 +129,9 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 		if err != nil {
 			return nil, []string{"创建登录首页请求失败", err.Error()}, err
 		}
+		for key, value := range params.Headers {
+			welcomeReq.Header.Set(key, value)
+		}
 		welcomeReq = welcomeReq.WithContext(ctx)
 		if params.Referrer == "" {
 			client.CheckRedirect = func(req *http.Request, via []*http.Request) error {
