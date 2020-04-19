@@ -38,13 +38,17 @@ func UnmarshalFromHjson(in []byte, value interface{}) error {
 	return json.Unmarshal(bs, value)
 }
 
-func FromHjsonFile(filename string, target interface{}) error {
+func FromHjsonFile(filename string, target interface{}, contentFuncs ...func([]byte) []byte) error {
 	bs, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return err
 	}
 	if bytes.HasPrefix(bs, []byte{0xEF, 0xBB, 0xBF}) {
 		bs = bs[3:]
+	}
+
+	for _, cb := range contentFuncs {
+		bs = cb(bs)
 	}
 	bs, err = HjsonToJSON(bs)
 	if err != nil {

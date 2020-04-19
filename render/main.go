@@ -13,6 +13,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
+	"context"
 	"io"
 	"io/ioutil"
 	"log"
@@ -22,6 +23,7 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+	htmltemplate "html/template"
 	"time"
 
 	"github.com/runner-mei/errors"
@@ -29,6 +31,7 @@ import (
 	"github.com/runner-mei/goutils/human"
 	"github.com/runner-mei/goutils/tid"
 	"github.com/runner-mei/goutils/util"
+	"github.com/runner-mei/goutils/urlutil"
 	"golang.org/x/text/transform"
 )
 
@@ -336,6 +339,38 @@ var TemplateFuncs = template.FuncMap{
 		}
 		return newContent
 	},
+
+	"joinPath": urlutil.JoinURLPath,
+	"urljoin":  urlutil.Join,
+	"filejoin": filepath.Join,
+	"urlParam": func(key string, value, urlObject interface{}) string {
+		var u *url.URL
+		switch v := urlObject.(type) {
+		case string:
+			var err error
+			u, err = url.Parse(v)
+			if err != nil {
+				panic(errors.New("url '" + v + "' is invalid url: " + err.Error()))
+			}
+		case url.URL:
+			u = &v
+		case *url.URL:
+			u = v
+		case htmltemplate.URL:
+			var err error
+			u, err = url.Parse(string(v))
+			if err != nil {
+				panic(errors.New("url '" + string(v) + "' is invalid url: " + err.Error()))
+			}
+		default:
+			panic(fmt.Errorf("url '[%T] %s' is invalid url", urlObject, urlObject))
+		}
+
+		query := u.Query()
+		query.Add(key, fmt.Sprint(value))
+		u.RawQuery = query.Encode()
+		return u.String()
+	},
 }
 
 func toInt(value interface{}) interface{} {
@@ -530,15 +565,18 @@ func des_cfb_encrypt(pwd, src []byte) []byte {
 	return encryptText
 }
 
-func ParseFile(nm string, funcs template.FuncMap) (*template.Template, error) {
+func ParseFile(ctx context.Context, nm string, funcs template.FuncMap) (*template.Template, error) {
 	s, e := ioutil.ReadFile(nm)
 	if nil != e {
 		return nil, e
 	}
-	return ParseString(filepath.Base(nm), string(s), funcs)
+	if bytes.HasPrefix(s, []byte{0xEF, 0xBB, 0xBF}) {
+		s = s[3:]
+	}
+	return ParseBytes(ctx, filepath.Base(nm), s, funcs)
 }
 
-func ParseString(name, content string, funcs template.FuncMap) (*template.Template, error) {
+func ParseString(ctx context.Context, name, content string, funcs template.FuncMap) (*template.Template, error) {
 	if 0 == len(funcs) {
 		return template.New(name).Funcs(TemplateFuncs).Parse(content)
 	}
@@ -546,6 +584,16 @@ func ParseString(name, content string, funcs template.FuncMap) (*template.Templa
 		funcs[k] = v
 	}
 	return template.New(name).Funcs(funcs).Parse(content)
+}
+
+func ParseBytes(ctx context.Context, name string, content []byte,  funcs template.FuncMap) (*template.Template, error) {
+	if 0 == len(funcs) {
+		return template.New(name).Funcs(TemplateFuncs).Parse(string(content))
+	}
+	for k, v := range TemplateFuncs {
+		funcs[k] = v
+	}
+	return template.New(name).Funcs(funcs).Parse(string(content))
 }
 
 func NewTemplate(name string) *template.Template {
@@ -556,18 +604,35 @@ func NewTemplate(name string) *template.Template {
 	return t
 }
 
-func RenderText(content string, args interface{}, funcs template.FuncMap) string {
-	t, e := ParseString("default", content, funcs)
+func RenderText(ctx context.Context, content string, args interface{}, funcs template.FuncMap) string {
+	t, e := ParseString(ctx, "default", content, funcs)
 	if nil != e {
 		log.Println("[warn] failed to merge '"+content+"' with ", args, " - ", e)
 		return content
 	}
 
-	var buffer bytes.Buffer
+	var buffer strings.Builder
 	e = t.Execute(&buffer, args)
 	if nil != e {
 		log.Println("[warn] failed to merge '"+content+"' with ", args, " - ", e)
 		return content
 	}
 	return buffer.String()
+}
+
+
+func RenderBytes(ctx context.Context, content []byte, args interface{}, funcs template.FuncMap) []byte {
+	t, e := ParseBytes(ctx, "default", content, funcs)
+	if nil != e {
+		log.Println("[warn] failed to merge '"+string(content)+"' with ", args, " - ", e)
+		return content
+	}
+
+	var buffer bytes.Buffer
+	e = t.Execute(&buffer, args)
+	if nil != e {
+		log.Println("[warn] failed to merge '"+string(content)+"' with ", args, " - ", e)
+		return content
+	}
+	return buffer.Bytes()
 }
