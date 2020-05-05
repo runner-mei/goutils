@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"net"
 	"strconv"
 	"unicode"
 
@@ -203,6 +204,14 @@ func Expect(ctx context.Context, conn Conn, matchs ...Matcher) error {
 	for retryCount := 0; retryCount < maxRetryCount; retryCount++ {
 		idx, recvBytes, err := conn.Expect(prompts)
 		if err != nil {
+			if bytes.Contains(recvBytes, []byte("Network error:")) {
+				if bytes.Contains(recvBytes, []byte("Connection timed out")) {
+					return &net.OpError{Op: "dial",
+						Net: "tcp",
+						Err: net.UnknownNetworkError(string(recvBytes))}
+				}
+				return errors.New(string(recvBytes))
+			}
 			err = errors.Wrap(err, "read util '"+string(bytes.Join(prompts, []byte(",")))+"' failed")
 			return errors.WrapWithSuffix(err, "\r\n"+ToHexStringIfNeed(recvBytes))
 		}
