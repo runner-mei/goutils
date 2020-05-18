@@ -30,7 +30,9 @@ import (
 type Writer interface {
 	io.Closer
 	Add(relPath, destPath string) error
+	AddFile(relPath, destPath string) error
 	AddDir(relPath, destPath string) error
+	AddPattern(relPath, destPath, pat string) error
 }
 
 type baseWriter struct {
@@ -39,6 +41,34 @@ type baseWriter struct {
 
 func (w *baseWriter) Add(relPath, destPath string) error {
 	return w.add(relPath, destPath, nil)
+}
+
+func (w *baseWriter) AddFile(relPath, destPath string) error {
+	return w.add(relPath, destPath, nil)
+}
+
+func (w *baseWriter) AddPattern(relPath, destPath, pat string) error {
+	pa := filepath.Join(destPath, pat)
+	matches, err := filepath.Glob(pa)
+	if err != nil {
+		return err
+	}
+	for _, match := range matches {
+		relPa, err := filepath.Rel(destPath, match)
+		if err != nil {
+			return err
+		}
+		dir := filepath.Dir(relPa)
+		if dir == "" || dir == "." {
+			err = w.AddFile(relPath, match)
+		} else {
+			err = w.AddFile(filepath.Join(relPath, dir), match)
+		}
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func (w *baseWriter) AddDir(relPath, destPath string) error {

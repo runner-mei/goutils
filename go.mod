@@ -15,8 +15,13 @@ require (
 	github.com/opentracing/opentracing-go v1.1.0 // indirect
 	github.com/runner-mei/errors v0.0.0-20200318090343-75b0baa0f222
 	github.com/runner-mei/resty v0.0.0-20191102140647-fa73802f0b7f
+	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb
 	golang.org/x/crypto v0.0.0-20200208060501-ecb85df21340
 	golang.org/x/net v0.0.0-20200202094626-16171245cfb2
 	golang.org/x/sys v0.0.0-20200317113312-5766fd39f98d // indirect
 	golang.org/x/text v0.3.2
+)
+
+replace (
+	github.com/yeka/zip => github.com/runner-mei/zip v0.0.0-20190614074322-c80fd4edb7a7
 )
