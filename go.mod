@@ -22,6 +22,4 @@ require (
 	golang.org/x/text v0.3.2
 )
 
-replace (
-	github.com/yeka/zip => github.com/runner-mei/zip v0.0.0-20190614074322-c80fd4edb7a7
-)
+replace github.com/yeka/zip => github.com/runner-mei/zip v0.0.0-20190614074322-c80fd4edb7a7
