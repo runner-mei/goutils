@@ -495,11 +495,17 @@ var genericMap = map[string]interface{}{
 }
 
 func joinWith(sb *strings.Builder, sep string, values []interface{}) {
-	for idx, v := range values {
-		if idx > 0 {
+	isFirst := true
+	for _, v := range values {
+		if v == nil {
+			continue
+		}
+
+		if !isFirst {
 			sb.WriteString(sep)
 		}
 
+		isFirst = false
 		switch s := v.(type) {
 		case string:
 			sb.WriteString(s)
