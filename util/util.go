@@ -13,18 +13,12 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/runner-mei/goutils/syncx"
 )
 
 var IsWindows = runtime.GOOS == "windows"
 
-type CloseFunc func() error
-
-func (f CloseFunc) Close() error {
-	if f == nil {
-		return nil
-	}
-	return f()
-}
+type CloseFunc = syncx.CloseFunc
 
 func CloseBatch(closeList ...io.Closer) error {
 	var errList []error
@@ -54,7 +48,7 @@ func CloseBatch(closeList ...io.Closer) error {
 }
 
 func TryClose(v interface{}) {
-	if c, ok := v.(interface{
+	if c, ok := v.(interface {
 		Close()
 	}); ok {
 		c.Close()
@@ -176,7 +170,6 @@ func IsZero(v reflect.Value) bool {
 	}
 	return false
 }
-
 
 func CopyFrom(froms ...map[string]interface{}) map[string]interface{} {
 	res := map[string]interface{}{}
