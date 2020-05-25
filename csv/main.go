@@ -1,13 +1,34 @@
 package csv
 
 import (
+	"bytes"
 	"encoding/csv"
 	"io"
 	"strings"
 )
 
+func RemoveBOM(in io.Reader) (io.Reader, error) {
+	var magic [3]byte
+	n, err := io.ReadFull(in, magic[:])
+	if err != nil {
+		return nil, err
+	}
+	if n < 3 {
+		return nil, io.ErrUnexpectedEOF
+	}
+	if bytes.HasPrefix(magic[:], []byte{0xEF, 0xBB, 0xBF}) {
+		return in, nil
+	}
+	return io.MultiReader(bytes.NewReader(magic[:]), in), nil
+}
+
 func ReadCSV(in io.Reader, alias map[string]string, cb func(line int, header, values []string) error) error {
-	r := csv.NewReader(in)
+	nr, err := RemoveBOM(in)
+	if err != nil {
+		return err
+	}
+
+	r := csv.NewReader(nr)
 	header, err := r.Read()
 	if err != nil {
 		return err
@@ -30,7 +51,13 @@ func ReadCSV(in io.Reader, alias map[string]string, cb func(line int, header, va
 }
 
 func ReadCSVWithNoHead(in io.Reader, header []string, cb func(line int, header, values []string) error) error {
-	r := csv.NewReader(in)
+	nr, err := RemoveBOM(in)
+	if err != nil {
+		return err
+	}
+
+	r := csv.NewReader(nr)
+
 	return readCSV(r, header, 0, cb)
 }
 
