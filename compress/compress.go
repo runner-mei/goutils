@@ -32,7 +32,7 @@ type Writer interface {
 	Add(relPath, destPath string) error
 	AddFile(relPath, destPath string) error
 	AddDir(relPath, destPath string) error
-	AddPattern(relPath, destPath, pat string) error
+	AddPattern(relPath, destPath, pat string, isRel bool) error
 }
 
 type baseWriter struct {
@@ -47,13 +47,21 @@ func (w *baseWriter) AddFile(relPath, destPath string) error {
 	return w.add(relPath, destPath, nil)
 }
 
-func (w *baseWriter) AddPattern(relPath, destPath, pat string) error {
+func (w *baseWriter) AddPattern(relPath, destPath, pat string, isRel bool) error {
 	pa := filepath.Join(destPath, pat)
 	matches, err := filepath.Glob(pa)
 	if err != nil {
 		return err
 	}
 	for _, match := range matches {
+		if !isRel {
+			err = w.AddFile(relPath, match)
+			if err != nil {
+				return err
+			}
+			continue
+		}
+
 		relPa, err := filepath.Rel(destPath, match)
 		if err != nil {
 			return err
