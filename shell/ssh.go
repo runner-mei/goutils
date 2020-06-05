@@ -161,6 +161,13 @@ func ConnectSSH(host, user, password, privateKey string, sWriter, cWriter io.Wri
 		return nil, errors.Wrap(err, "failed to start shell")
 	}
 
+	go func() {
+		err := session.Wait()
+		if err != nil {
+			p.CloseWithError(err)
+		}
+	}()
+
 	if cWriter != nil {
 		cWriter = MultWriters(stdin, cWriter)
 	} else {

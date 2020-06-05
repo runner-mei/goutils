@@ -285,7 +285,10 @@ func (s *Shell) Exec(ctx context.Context, command string) error {
 
 	_, err := s.Conn.DrainOff()
 	if err != nil {
-		return errors.Wrap(err, "执行命令之彰清空缓存失败")
+		if err == io.EOF {
+			return errors.New("执行命令之前清空缓存失败: 连接断开")
+		}
+		return errors.Wrap(err, "执行命令之前清空缓存失败")
 	}
 
 	err = s.Conn.Sendln([]byte(command))

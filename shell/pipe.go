@@ -1,6 +1,7 @@
 package shell
 
 import (
+	"fmt"
 	"io"
 	"sync"
 	"sync/atomic"
@@ -23,6 +24,7 @@ type pipe struct {
 	c                         chan byte
 	isClosed                  int32
 	readTimeout, writeTimeout time.Duration
+	err                       atomic.Value
 }
 
 func (c *pipe) SetReadDeadline(t time.Duration) error {
@@ -33,6 +35,36 @@ func (c *pipe) SetReadDeadline(t time.Duration) error {
 func (c *pipe) SetWriteDeadline(t time.Duration) error {
 	c.writeTimeout = t
 	return nil //errors.New("notimplented")
+}
+
+type ew struct {
+	err error
+}
+
+func (c *pipe) getError(de error) error {
+	o := c.err.Load()
+	if o == nil {
+		return de
+	}
+	w, ok := o.(*ew)
+	if ok {
+		return w.err
+	}
+	e, ok := o.(error)
+	if ok {
+		return e
+	}
+	return fmt.Errorf("%s", o)
+}
+
+func (c *pipe) CloseWithError(err error) error {
+	if err != nil && err != io.EOF {
+		o := c.err.Load()
+		if o == nil {
+			c.err.Store(&ew{err})
+		}
+	}
+	return c.Close()
 }
 
 func (c *pipe) Close() error {
@@ -48,7 +80,7 @@ func (c *pipe) IsClosed() bool {
 
 func (c *pipe) WriteByte(b byte) (err error) {
 	if c.IsClosed() {
-		return io.EOF
+		return c.getError(io.EOF)
 	}
 
 	// fmt.Println("pipe write:", string(p))
@@ -76,7 +108,7 @@ func (c *pipe) WriteByte(b byte) (err error) {
 
 func (c *pipe) Write(p []byte) (n int, err error) {
 	if c.IsClosed() {
-		return 0, io.EOF
+		return 0, c.getError(io.EOF)
 	}
 
 	// fmt.Println("pipe write:", string(p))
@@ -118,9 +150,8 @@ func (c *pipe) Read(p []byte) (int, error) {
 			select {
 			case b, ok := <-c.c:
 				if !ok {
-
 					timer.Stop()
-					return offset, io.EOF
+					return offset, c.getError(io.EOF)
 				}
 				// fmt.Println("pipe read:", string(b))
 
@@ -141,7 +172,7 @@ func (c *pipe) Read(p []byte) (int, error) {
 			select {
 			case b, ok := <-c.c:
 				if !ok {
-					return offset, io.EOF
+					return offset, c.getError(io.EOF)
 				}
 				// fmt.Println("pipe read:", string(b))
 
@@ -164,7 +195,7 @@ func (c *pipe) DrainTo(w io.Writer) (int, error) {
 		select {
 		case b, ok := <-c.c:
 			if !ok {
-				return offset, io.EOF
+				return offset, c.getError(io.EOF)
 			}
 			offset++
 			a[0] = b
@@ -186,7 +217,7 @@ func (c *pipe) ReadByte() (byte, error) {
 			timer.Stop()
 
 			if !ok {
-				return 0, io.EOF
+				return 0, c.getError(io.EOF)
 			}
 
 			// fmt.Println("pipe read:", string(b))
@@ -197,7 +228,7 @@ func (c *pipe) ReadByte() (byte, error) {
 	}
 	b, ok := <-c.c
 	if !ok {
-		return 0, io.EOF
+		return 0, c.getError(io.EOF)
 	}
 	// fmt.Println("pipe read:", string(b))
 	return b, nil

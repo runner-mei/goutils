@@ -6,8 +6,8 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/util"
 )
 
 var PlinkPath = "runtime_env/putty/plink.exe"
@@ -72,6 +72,13 @@ func ConnectPlink(host, username, password, privateKey string, sWriter, cWriter 
 		cWriter = stdin
 	}
 
+	go func() {
+		err := cmd.Wait()
+		if err != nil {
+			p.CloseWithError(err)
+		}
+	}()
+
 	pClient := &PlinkClient{
 		cmd: cmd,
 	}
@@ -79,7 +86,7 @@ func ConnectPlink(host, username, password, privateKey string, sWriter, cWriter 
 		if e := cmd.Process.Kill(); nil != e {
 			return e
 		}
-		return cmd.Wait()
+		return nil
 	}), cWriter, p)
 	return pClient, nil
 }

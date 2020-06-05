@@ -136,7 +136,7 @@ func TelnetWrap(c *Telnet, tees, teec io.Writer) *ConnWrapper {
 				c.errc <- err
 				close(c.errc)
 
-				p.Close()
+				p.CloseWithError(err)
 				break
 			}
 
@@ -144,7 +144,7 @@ func TelnetWrap(c *Telnet, tees, teec io.Writer) *ConnWrapper {
 				c.errc <- err
 				close(c.errc)
 
-				p.Close()
+				p.CloseWithError(err)
 				break
 			}
 
