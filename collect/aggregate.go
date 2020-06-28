@@ -23,7 +23,7 @@ func CreateAggregateFactory(t, operator string) (AggregateFactory, error) {
 		return &firstAggregation{}, nil
 	} else if "last" == operator {
 		return &lastAggregation{}, nil
-	} else if "count" == operator {
+	} else if "count" == operator || "count()" == operator {
 		return &countAggregation{}, nil
 	}
 
