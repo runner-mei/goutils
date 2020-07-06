@@ -2,6 +2,7 @@ package render
 
 import (
 	"bytes"
+	"context"
 	"crypto"
 	"crypto/aes"
 	"crypto/cipher"
@@ -13,7 +14,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"hash"
-	"context"
+	htmltemplate "html/template"
 	"io"
 	"io/ioutil"
 	"log"
@@ -23,15 +24,14 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
-	htmltemplate "html/template"
 	"time"
 
 	"github.com/runner-mei/errors"
 	"github.com/runner-mei/goutils/as"
 	"github.com/runner-mei/goutils/human"
 	"github.com/runner-mei/goutils/tid"
-	"github.com/runner-mei/goutils/util"
 	"github.com/runner-mei/goutils/urlutil"
+	"github.com/runner-mei/goutils/util"
 	"golang.org/x/text/transform"
 )
 
@@ -373,6 +373,15 @@ var TemplateFuncs = template.FuncMap{
 	},
 }
 
+func init() {
+	for k, v := range genericMap {
+		_, ok := TemplateFuncs[k]
+		if !ok {
+			TemplateFuncs[k] = v
+		}
+	}
+}
+
 func toInt(value interface{}) interface{} {
 	if nil == value {
 		return value
@@ -586,7 +595,7 @@ func ParseString(ctx context.Context, name, content string, funcs template.FuncM
 	return template.New(name).Funcs(funcs).Parse(content)
 }
 
-func ParseBytes(ctx context.Context, name string, content []byte,  funcs template.FuncMap) (*template.Template, error) {
+func ParseBytes(ctx context.Context, name string, content []byte, funcs template.FuncMap) (*template.Template, error) {
 	if 0 == len(funcs) {
 		return template.New(name).Funcs(TemplateFuncs).Parse(string(content))
 	}
@@ -619,7 +628,6 @@ func RenderText(ctx context.Context, content string, args interface{}, funcs tem
 	}
 	return buffer.String()
 }
-
 
 func RenderBytes(ctx context.Context, content []byte, args interface{}, funcs template.FuncMap) []byte {
 	t, e := ParseBytes(ctx, "default", content, funcs)
