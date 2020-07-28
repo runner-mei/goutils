@@ -58,3 +58,19 @@ func ToSimplifiedChinese(bs []byte) []byte {
 	}
 	return bb
 }
+
+func FromGB18030(bs []byte) []byte {
+	bb, _, e := transform.Bytes(simplifiedchinese.GB18030.NewDecoder(), bs)
+	if nil != e {
+		return bs
+	}
+	return bb
+}
+
+func ToGB18030(bs []byte) []byte {
+	bb, _, e := transform.Bytes(simplifiedchinese.GB18030.NewEncoder(), bs)
+	if nil != e {
+		return bs
+	}
+	return bb
+}
