@@ -481,7 +481,12 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 				return nil, logMessages, errors.New("excepted content not found in http body")
 			}
 			if strings.HasPrefix(posturl, "/") {
-				posturl = params.BaseURL() + posturl
+				u, _ := url.Parse(loginURL)
+				if u != nil {
+					posturl = u.Scheme + "://" + u.Host + posturl
+				} else {
+					posturl = params.BaseURL() + posturl
+				}
 			}
 
 			logMessages = append(logMessages, "发送登录请求成功， 但响应不包含指定的字符，但表单尝试再试一次")
@@ -505,6 +510,15 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 
 					params.AutoRedirectURL = urlStr
 					params.AutoRedirectEnabled = "true"
+
+					if strings.HasPrefix(params.AutoRedirectURL, "/") {
+						u, _ := url.Parse(loginURL)
+						if u != nil {
+							params.AutoRedirectURL = u.Scheme + "://" + u.Host + params.AutoRedirectURL
+						} else {
+							params.AutoRedirectURL = params.BaseURL() + params.AutoRedirectURL
+						}
+					}
 
 					logMessages = append(logMessages, "发送登录请求成功， 在响应中读到重定向")
 					break

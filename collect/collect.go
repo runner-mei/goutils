@@ -568,6 +568,7 @@ to_bytes:
 
 type filterItem struct {
 	field   string
+	isIndex int
 	checker check.Checker
 }
 
@@ -648,8 +649,13 @@ func Select(v interface{}, filter *Filter, skipIfTypeNotMatch bool, notExist Not
 	})
 }
 
-func Field(name string, notExist NotExistStrategy) func(value map[string]interface{}) (interface{}, error) {
-	return func(value map[string]interface{}) (interface{}, error) {
+func Field(name string, notExist NotExistStrategy) func(idx Location, value map[string]interface{}) (interface{}, error) {
+	if name == "_index" {
+		return func(idx Location, value map[string]interface{}) (interface{}, error) {
+			return idx, nil
+		}
+	}
+	return func(idx Location, value map[string]interface{}) (interface{}, error) {
 		fieldValue, ok := value[name]
 		if !ok {
 			switch notExist {
@@ -666,9 +672,9 @@ func Field(name string, notExist NotExistStrategy) func(value map[string]interfa
 	}
 }
 
-func Map(mapping func(map[string]interface{}) (interface{}, error), result func(Location, map[string]interface{}, interface{}) error) func(Location, map[string]interface{}) error {
+func Map(mapping func(Location, map[string]interface{}) (interface{}, error), result func(Location, map[string]interface{}, interface{}) error) func(Location, map[string]interface{}) error {
 	return func(idx Location, value map[string]interface{}) error {
-		newValue, err := mapping(value)
+		newValue, err := mapping(idx, value)
 		if err != nil {
 			return err
 		}

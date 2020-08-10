@@ -1,0 +1,29 @@
+package httpauth
+
+import "testing"
+
+func Test(t *testing.T) {
+	m := "00a9065378eddc455c15143b4a733fdcb3ef29c4e7598522c5fcfff580d5d98dbbcb3e132beae4fb5d5b5db6342cb4f455e84c9f9488663fd59c3676c99ea8c32463a0a0b75688ad364e9e12dbc4cec2fb331ee58bc3881c9869babd1b10677e39d5cb7c30f23be7547b2e6d8ed2cae8942e2767efc7ec804286e01484533ab47f"
+	e := "010001"
+	random := "xxx"
+	content := "2cjnx123"
+
+	// wangsheng hd
+	// username  ec_xnjc2
+	// password  2b04484758ca9bc0e53c6875891c0a39966ba86131a9e7a0c0fce28c04fb73f1746a50adc0a3204c1caff9fa580c4780ade691f09f5dd3cbc97f9e933902890ce4b32bf7da5a19f91ef6003da09b911d06acde025957de5ee50e67eca784c16d6bd7ddeb15305e379806e99b316e87c97d639f5e270054533a1855f5a724b98d
+	// Submit  登录
+	// Submit2 重置
+	// lt  LT-4512281-0HtE93uvkQEbZblT5hZvOeNwF2ufYi
+	// execution e1s1
+	// _eventId  submit
+	// m 00a9065378eddc455c15143b4a733fdcb3ef29c4e7598522c5fcfff580d5d98dbbcb3e132beae4fb5d5b5db6342cb4f455e84c9f9488663fd59c3676c99ea8c32463a0a0b75688ad364e9e12dbc4cec2fb331ee58bc3881c9869babd1b10677e39d5cb7c30f23be7547b2e6d8ed2cae8942e2767efc7ec804286e01484533ab47f
+	// e 010001
+
+	result := "2b04484758ca9bc0e53c6875891c0a39966ba86131a9e7a0c0fce28c04fb73f1746a50adc0a3204c1caff9fa580c4780ade691f09f5dd3cbc97f9e933902890ce4b32bf7da5a19f91ef6003da09b911d06acde025957de5ee50e67eca784c16d6bd7ddeb15305e379806e99b316e87c97d639f5e270054533a1855f5a724b98d"
+
+	a := createSecurityData(m, e, random, content)
+
+	if a != result {
+		t.Error("a")
+	}
+}
