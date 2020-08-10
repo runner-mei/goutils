@@ -18,20 +18,21 @@ func MD5(src string) string {
 	return base64.StdEncoding.EncodeToString(cipherStr)
 }
 
-func CreateSecurityData(values url.Values) string {
+func CreateSecurityData(values url.Values) url.Values {
 	m := values.Get("m")
 	e := values.Get("e")
 
 	content := values.Get("password")
-
-	return createSecurityData(m, e, "abc", content)
+	content = createSecurityData(m, e, "abc", content)
+	values.Set("password", content)
+	return values
 }
 
 func createSecurityData(m, e, random, content string) string {
 	// var key = RSAUtils.getKeyPair(e, '', m);
 	pub := &rsa.PublicKey{
 		N: fromBase16(m),
-		E: fromBase16(e),
+		// E: fromBase16(e),
 	}
 
 	md5 := MD5(content)
@@ -39,7 +40,7 @@ func createSecurityData(m, e, random, content string) string {
 
 	data, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(envilope))
 	if err != nil {
-		panic(fmt.Errorf("m=%s,e=%s, random=%s, content=%content", m, e, random, content))
+		panic(fmt.Errorf("m=%s,e=%s, random=%s, content=%s", m, e, random, content))
 	}
 	return hex.EncodeToString(data)
 	// return RSAUtils.encryptedString(key, envilope)
