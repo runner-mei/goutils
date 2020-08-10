@@ -47,8 +47,10 @@ func FromHjsonFile(filename string, target interface{}, contentFuncs ...func([]b
 		bs = bs[3:]
 	}
 
-	for _, cb := range contentFuncs {
-		bs = cb(bs)
+	if len(contentFuncs) > 0 {
+		for _, cb := range contentFuncs {
+			bs = cb(bs)
+		}
 	}
 	bs, err = HjsonToJSON(bs)
 	if err != nil {

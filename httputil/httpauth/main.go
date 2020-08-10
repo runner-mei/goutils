@@ -384,6 +384,23 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 	}
 
 	if params.ExceptedContent != "" {
+		//var body []byte
+
+		// switch loginResp.Header.Get("Content-Encoding") {
+		// case "gzip":
+		// 	reader, e := gzip.NewReader(loginResp.Body)
+		// 	if e != nil {
+
+		// 		logMessages = append(logMessages, "发送登录请求成功， 但读响应失败:"+e.Error())
+		// 		return nil, logMessages, errors.New("status code is '" + loginResp.Status + "' - failed to read body: " + e.Error())
+		// 	}
+		// 	defer reader.Close()
+		// 	body, err = ioutil.ReadAll(reader)
+		// default:
+		// body, err := ioutil.ReadAll(loginResp.Body)
+		//}
+
+		// FIXME: 这里有点坑，httputil.Dump 有对内容解压缩，这里就不能再解压缩了
 		body, err := ioutil.ReadAll(loginResp.Body)
 		if err != nil {
 			logMessages = append(logMessages, "发送登录请求成功， 但读响应失败")

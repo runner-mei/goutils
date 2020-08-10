@@ -2,6 +2,7 @@ package httputil
 
 import (
 	"bytes"
+	"compress/gzip"
 	"io"
 	"io/ioutil"
 	"net/http"
@@ -69,10 +70,19 @@ func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, reqBody io.Rea
 			io.Copy(dumpOut, respBody)
 			dumpOut.Write([]byte("\r\n"))
 		} else {
-			body, err := ioutil.ReadAll(resp.Body)
-			if err != nil {
+
+			var body []byte
+			switch resp.Header.Get("Content-Encoding") {
+			case "gzip":
+				reader, _ := gzip.NewReader(resp.Body)
+				defer reader.Close()
+				body, e = ioutil.ReadAll(reader)
+			default:
+				body, e = ioutil.ReadAll(resp.Body)
+			}
+			if e != nil {
 				io.WriteString(dumpOut, "***")
-				io.WriteString(dumpOut, err.Error())
+				io.WriteString(dumpOut, e.Error())
 			} else {
 				dumpOut.Write(body)
 				dumpOut.Write([]byte("\r\n"))
