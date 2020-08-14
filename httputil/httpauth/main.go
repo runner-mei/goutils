@@ -22,6 +22,7 @@ import (
 	"github.com/runner-mei/goutils/httputil"
 	"github.com/runner-mei/goutils/urlutil"
 	"github.com/runner-mei/goutils/util"
+	rutil "github.com/runner-mei/resty/util"
 	"golang.org/x/net/html"
 )
 
@@ -158,6 +159,11 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 		client.CheckRedirect = nil
 
 		logMessages = append(logMessages, "访问"+rawWelcomeURL+" 成功")
+
+		welcomeResp, err = rutil.WrapUncompress(welcomeResp, false)
+		if nil != err {
+			return nil, []string{"判断登录首页响应是否要解压失败", err.Error()}, err
+		}
 
 		body, err := ioutil.ReadAll(welcomeResp.Body)
 		welcomeResp.Body.Close()
@@ -361,6 +367,15 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 	if loginResp != nil {
 		body := loginResp.Body
 		defer body.Close()
+	}
+
+	loginResp, err = rutil.WrapUncompress(loginResp, false)
+	if nil != err {
+		return nil, []string{"判断登录响应是否要解压失败", err.Error()}, err
+	}
+	loginResp, err = rutil.WrapCharset(loginResp, false)
+	if nil != err {
+		return nil, []string{"判断登录响应是否要转码失败", err.Error()}, err
 	}
 
 	httputil.Dump(dumpOut,

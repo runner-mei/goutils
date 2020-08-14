@@ -126,6 +126,8 @@ github.com/runner-mei/loong v1.0.7/go.mod h1:nuZTSkb2Y/BC8xsGVDIo0G+fQQFune/J+LB
 github.com/runner-mei/moo v0.0.0-20200227042737-b53fca99fe68/go.mod h1:wS0C3E+cUUbArE6Yp36eBay92cFRuIy0rIP/7GBmBuY=
 github.com/runner-mei/resty v0.0.0-20191102140647-fa73802f0b7f h1:TjtdzP+dPyQhlsHLEDF+efkTMT4/lFRoXfAie0mEoRg=
 github.com/runner-mei/resty v0.0.0-20191102140647-fa73802f0b7f/go.mod h1:EtdW2DD7fG5IeQrnBo+iOqvcjQ04Su1Wq4Zrj9KAQ/c=
+github.com/runner-mei/resty v0.0.0-20200814091018-9ded4cf5cc97 h1:sB1S7Y1RzhnOUauG7wIFhuQQA4EW/cTg4RYaAC0Ts7c=
+github.com/runner-mei/resty v0.0.0-20200814091018-9ded4cf5cc97/go.mod h1:EtdW2DD7fG5IeQrnBo+iOqvcjQ04Su1Wq4Zrj9KAQ/c=
 github.com/runner-mei/zip v0.0.0-20190614074322-c80fd4edb7a7 h1:5GODI8ARDONLc6QO83cU5nyiW86LpvhGvsLS3i2l0Ck=
 github.com/runner-mei/zip v0.0.0-20190614074322-c80fd4edb7a7/go.mod h1:jH6zGYHOCoic0MOlTHC0lWE4pABYRty5Ejlyyzq96uI=
 github.com/serenize/snaker v0.0.0-20171204205717-a683aaf2d516 h1:ofR1ZdrNSkiWcMsRrubK9tb2/SlZVWttAfqUjJi6QYc=

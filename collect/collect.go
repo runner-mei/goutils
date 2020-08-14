@@ -568,12 +568,12 @@ to_bytes:
 
 type filterItem struct {
 	field   string
-	isIndex int
+	isIndex bool
 	checker check.Checker
 }
 
 func (fi *filterItem) filter(notExist NotExistStrategy, index int, value map[string]interface{}) (bool, error) {
-	if fi.field == "_index" {
+	if fi.isIndex {
 		return fi.checker.Check(index)
 	}
 	fieldValue, ok := value[fi.field]
@@ -608,6 +608,7 @@ func (filter *Filter) Add(field, typ, op string, value interface{}) *Filter {
 	}
 	filter.items = append(filter.items, filterItem{
 		field:   field,
+		isIndex: field == "_index",
 		checker: checker,
 	})
 	return filter
