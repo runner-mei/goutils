@@ -1157,7 +1157,11 @@ func isEmpty(list interface{}) bool {
 		return true
 	}
 	rValue := reflect.ValueOf(list)
-	if rValue.Kind() != reflect.Slice {
+	kind := rValue.Kind()
+	if kind != reflect.Slice &&
+		kind != reflect.Array &&
+		kind != reflect.Map &&
+		kind != reflect.String {
 		return false
 	}
 	return rValue.Len() == 0
