@@ -1,11 +1,8 @@
 package as
 
 import (
-	"bufio"
-	"bytes"
 	"encoding/json"
 	"fmt"
-	"io"
 	"math"
 	"math/big"
 	"net"
@@ -15,6 +12,7 @@ import (
 	"time"
 
 	"github.com/runner-mei/errors"
+	"github.com/runner-mei/goutils/split"
 )
 
 var ErrValueNotFound = errors.ErrValueNotFound
@@ -363,16 +361,7 @@ func IntsWithDefault(value interface{}, defValue []int) []int {
 }
 
 // InplaceReader a inplace reader for bufio.Scanner
-type InplaceReader int
-
-func (p *InplaceReader) Read([]byte) (int, error) {
-	if *p == 0 {
-		return 0, io.EOF
-	}
-	ret := int(*p)
-	*p = 0
-	return ret, io.EOF
-}
+type InplaceReader = split.InplaceReader
 
 func ToStrings(o interface{}) []string {
 	if ss, ok := o.([]string); ok {
@@ -409,45 +398,19 @@ func ToStrings(o interface{}) []string {
 }
 
 func SplitStrings(bs []byte) ([]string, error) {
-	if len(bs) == 0 {
-		return nil, nil
-	}
+	return split.Strings(bs)
+}
 
-	var ipList []string
-	if err := json.Unmarshal(bs, &ipList); err == nil {
-		return ipList, nil
-	}
+func SplitLines(bs []byte) [][]byte {
+	return split.Lines(bs, false, false)
+}
 
-	r := InplaceReader(len(bs))
-	scanner := bufio.NewScanner(&r)
-	scanner.Buffer(bs, len(bs))
+func SplitStringLines(bs []byte, ignoreEmpty bool) []string {
+	return split.StringLines(bs, ignoreEmpty, false)
+}
 
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) == 0 {
-			continue
-		}
-		line = bytes.TrimSpace(line)
-		if len(line) == 0 {
-			continue
-		}
-
-		for _, field := range bytes.Split(line, []byte(",")) {
-			if len(field) == 0 {
-				continue
-			}
-			field = bytes.TrimSpace(field)
-			if len(field) == 0 {
-				continue
-			}
-			ipList = append(ipList, string(field))
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		return nil, err
-	}
-
-	return ipList, nil
+func Split(s, sep string, ignoreEmpty, trimSpace bool) []string {
+	return split.Split(s, sep, ignoreEmpty, trimSpace)
 }
 
 func Strings(value interface{}) ([]string, error) {

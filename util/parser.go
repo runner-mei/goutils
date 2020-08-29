@@ -11,55 +11,22 @@ import (
 	"time"
 
 	"github.com/runner-mei/goutils/as"
+	"github.com/runner-mei/goutils/split"
 )
 
 // InplaceReader a inplace reader for bufio.Scanner
 type InplaceReader = as.InplaceReader
 
 func SplitLines(bs []byte) [][]byte {
-	if len(bs) == 0 {
-		return nil
-	}
-
-	r := InplaceReader(len(bs))
-	scanner := bufio.NewScanner(&r)
-	scanner.Buffer(bs, len(bs))
-
-	lines := make([][]byte, 0, 10)
-	for scanner.Scan() {
-		line := scanner.Bytes()
-		if len(line) > 0 {
-			if line[len(line)-1] == '\n' {
-				line = line[:len(line)-1]
-			}
-		}
-		if len(line) > 0 {
-			if line[len(line)-1] == '\r' {
-				line = line[:len(line)-1]
-			}
-		}
-		lines = append(lines, line)
-	}
-
-	if nil != scanner.Err() {
-		panic(scanner.Err())
-	}
-	return lines
+	return split.Lines(bs, false, false)
 }
 
 func SplitStringLines(bs []byte, ignoreEmpty bool) []string {
-	if len(bs) == 0 {
-		return nil
-	}
-	lines := SplitLines(bs)
-	ss := make([]string, 0, len(lines))
-	for idx := range lines {
-		if ignoreEmpty && len(lines[idx]) == 0 {
-			continue
-		}
-		ss = append(ss, string(lines[idx]))
-	}
-	return ss
+	return split.StringLines(bs, ignoreEmpty, false)
+}
+
+func SplitStrings(s, sep string, ignoreEmpty, trimSpace bool) []string {
+	return split.Split(s, sep, ignoreEmpty, trimSpace)
 }
 
 func NewScanner(bs []byte) *bufio.Scanner {
