@@ -20,6 +20,7 @@ require (
 	github.com/runner-mei/errors v0.0.0-20200318090343-75b0baa0f222
 	github.com/runner-mei/k8 v0.0.0-20200303123854-a772ca4b01fa
 	github.com/runner-mei/resty v0.0.0-20200814091018-9ded4cf5cc97
+	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb
 	golang.org/x/crypto v0.0.0-20200221231518-2aa609cf4a9d
 	golang.org/x/net v0.0.0-20200226121028-0de0cce0169b

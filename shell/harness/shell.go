@@ -28,6 +28,7 @@ type ExecuteResult struct {
 type Shell struct {
 	SSHParams    *SSHParam
 	TelnetParams *TelnetParam
+	SerialParams *SerialParam
 
 	IsSSHConn   bool
 	Conn        shell.Conn
@@ -116,6 +117,8 @@ func (s *Shell) Connect(ctx context.Context, target string, opts ...Option) erro
 			target = "ssh"
 		} else if s.TelnetParams != nil {
 			target = "telnet"
+		} else if s.SerialParams != nil {
+			target = "serial"
 		} else {
 			return errors.New("没有 ssh 和 telnet 参数")
 		}
@@ -145,9 +148,30 @@ func (s *Shell) Connect(ctx context.Context, target string, opts ...Option) erro
 			return errors.New("没有 telnet 参数")
 		}
 		return s.connectTelnet(ctx, opts...)
+	case "serial":
+		if s.SerialParams == nil {
+			return errors.New("没有 serial 参数")
+		}
+		return s.connectSerial(ctx, opts...)
+
 	default:
 		return errors.New("不支持 '" + target + "' 参数")
 	}
+}
+
+func (s *Shell) connectSerial(ctx context.Context, opts ...Option) error {
+	if s.userCRLF {
+		s.SerialParams.UseCRLF = true
+	}
+
+	conn, prompt, err := DailSerial(ctx, s.SerialParams, opts...)
+	if err != nil {
+		return err
+	}
+	s.IsSSHConn = false
+	s.Conn = conn
+	s.Prompt = prompt
+	return nil
 }
 
 func (s *Shell) connectTelnet(ctx context.Context, opts ...Option) error {
