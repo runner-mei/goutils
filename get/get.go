@@ -230,6 +230,17 @@ func StringArray(attributes map[string]interface{}, key string) ([]string, error
 		return nil, ErrValueNull
 	}
 
+	if s, ok := v.(string); ok {
+		if strings.HasPrefix(s, "[") {
+			var ss []string
+			if e := json.Unmarshal([]byte(s), &ss); nil != e {
+				return nil, e
+			}
+			return ss, nil
+		}
+		return []string{s}, nil
+	}
+
 	res, ok := v.([]interface{})
 	if !ok {
 		ss, ok := v.([]string)
@@ -261,12 +272,16 @@ func StringArrayWithDefault(attributes map[string]interface{}, key string, defau
 	if nil == v {
 		return defaultValue
 	}
-	if s, ok := v.(string); ok && strings.HasPrefix(s, "[") {
-		var ss []string
-		if e := json.Unmarshal([]byte(s), &ss); nil != e {
-			return defaultValue
+	if s, ok := v.(string); ok {
+		if strings.HasPrefix(s, "[") {
+			var ss []string
+			if e := json.Unmarshal([]byte(s), &ss); nil != e {
+				return defaultValue
+			}
+			return ss
 		}
-		return ss
+
+		return []string{s}
 	}
 
 	res, ok := v.([]interface{})

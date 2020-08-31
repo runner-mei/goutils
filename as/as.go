@@ -412,6 +412,29 @@ func SplitStringLines(bs []byte, ignoreEmpty bool) []string {
 func Split(s, sep string, ignoreEmpty, trimSpace bool) []string {
 	return split.Split(s, sep, ignoreEmpty, trimSpace)
 }
+func StringLines(value interface{}) ([]string, error) {
+	if value == nil {
+		return nil, ErrValueNull
+	}
+	switch vv := value.(type) {
+	case string:
+		return split.StringLines([]byte(vv), false, false), nil
+	case []string:
+		return vv, nil
+	case []interface{}:
+		results := make([]string, 0, len(vv))
+		for _, v := range vv {
+			s, e := String(v)
+			if e != nil {
+				return nil, e
+			}
+			results = append(results, s)
+		}
+		return results, nil
+	}
+
+	return nil, CreateTypeError(value, "string array")
+}
 
 func Strings(value interface{}) ([]string, error) {
 	if value == nil {
