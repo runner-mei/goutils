@@ -92,6 +92,13 @@ func (self *Config) Set(key string, value interface{}) {
 	self.settings[key] = value
 }
 
+// Set 写配置
+func (self *Config) SetDefault(key string, value interface{}) {
+	if _, ok := self.settings[key]; !ok {
+		self.settings[key] = value
+	}
+}
+
 // Unset 写配置
 func (self *Config) Unset(key string) interface{} {
 	old := self.settings[key]
