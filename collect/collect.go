@@ -17,7 +17,8 @@ const (
 )
 
 var (
-	ErrStopped = errors.New("stopped")
+	ErrStopped = errors.ErrStopped
+
 	// 	//RecordNotMatch = errors.New("value is not match.")
 	ErrValueNotObject = errors.New("value isn't a map[string]interface{}.")
 

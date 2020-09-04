@@ -1,13 +1,17 @@
 package util
 
 import (
-	"errors"
+	"bufio"
 	"io"
 	"io/ioutil"
 	"os"
 	"path"
 	"path/filepath"
+
+	"github.com/runner-mei/errors"
 )
+
+var ErrStopped = errors.ErrStopped
 
 func ReadLines(filename string) ([][]byte, error) {
 	bs, err := ioutil.ReadFile(filename)
@@ -36,6 +40,27 @@ func ReadStringLines(filename string, ignoreEmpty bool) ([]string, error) {
 		ss = append(ss, string(lines[idx]))
 	}
 	return ss, nil
+}
+
+func ReadEachLines(filename string, cb func([]byte) error) error {
+	f, err := os.Open(filename)
+	if err != nil {
+		return err
+	}
+	defer CloseWith(f)
+
+	scan := bufio.NewScanner(f)
+	for scan.Scan() {
+		err := cb(scan.Bytes())
+		if err != nil {
+			if errors.IsStopped(err) {
+				return nil
+			}
+			return err
+		}
+	}
+
+	return scan.Err()
 }
 
 // copyFileContents copies the contents of the file named src to the file named

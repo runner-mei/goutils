@@ -180,3 +180,4 @@ func CopyFrom(froms ...map[string]interface{}) map[string]interface{} {
 	}
 	return res
 }
+
