@@ -15,10 +15,9 @@ require (
 	github.com/mitchellh/mapstructure v1.1.2
 	github.com/mozillazg/go-slugify v0.2.0
 	github.com/mozillazg/go-unidecode v0.1.1 // indirect
-	github.com/opentracing/opentracing-go v1.1.0 // indirect
+	github.com/opentracing/opentracing-go v1.2.0 // indirect
 	github.com/runner-mei/check v0.0.0-20200624083308-d6cac10bd55d
-	github.com/runner-mei/errors v0.0.0-20200318090343-75b0baa0f222
-	github.com/runner-mei/k8 v0.0.0-20200303123854-a772ca4b01fa
+	github.com/runner-mei/errors v0.0.0-20200904125601-fcb86f2cb824
 	github.com/runner-mei/resty v0.0.0-20200814091018-9ded4cf5cc97
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb

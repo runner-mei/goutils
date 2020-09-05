@@ -11,7 +11,6 @@ import (
 	"strconv"
 
 	"github.com/dop251/goja"
-	"github.com/runner-mei/k8/js/common"
 )
 
 func MD5(src string) string {
@@ -795,12 +794,12 @@ const rsaJS = `/*
 
 func createSecurityData2(m, e, random, content string) string {
 	vm := goja.New()
-	_, err := common.RunString(vm, rsaJS)
+	_, err := vm.RunString(rsaJS)
 	if err != nil {
 		panic(err)
 	}
 
-	a, err := common.RunString(vm, `createSecurityData('`+m+`', '`+e+`', '`+random+`', '`+MD5(content)+`', '`+content+`')`)
+	a, err := vm.RunString(`createSecurityData('` + m + `', '` + e + `', '` + random + `', '` + MD5(content) + `', '` + content + `')`)
 	if err != nil {
 		panic(err)
 	}
