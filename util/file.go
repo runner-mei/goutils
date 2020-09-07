@@ -42,16 +42,18 @@ func ReadStringLines(filename string, ignoreEmpty bool) ([]string, error) {
 	return ss, nil
 }
 
-func ReadEachLines(filename string, cb func([]byte) error) error {
+func ReadEachLines(filename string, cb func(int, []byte) error) error {
 	f, err := os.Open(filename)
 	if err != nil {
 		return err
 	}
 	defer CloseWith(f)
 
+	count := 0
 	scan := bufio.NewScanner(f)
 	for scan.Scan() {
-		err := cb(scan.Bytes())
+		count++
+		err := cb(count, scan.Bytes())
 		if err != nil {
 			if errors.IsStopped(err) {
 				return nil
