@@ -107,9 +107,12 @@ func FileAppend(filename string, content []byte) error {
 }
 
 // FileExists 文件是否存在
-func FileExists(dir string) bool {
+func FileExists(dir string, e ...*error) bool {
 	info, err := os.Stat(dir)
 	if err != nil {
+		if len(e) != 0 {
+			*e[0] = err
+		}
 		return false
 	}
 
@@ -117,10 +120,13 @@ func FileExists(dir string) bool {
 }
 
 // DirExists 目录是否存在
-func DirExists(dir string) bool {
+func DirExists(dir string, err ...*error) bool {
 	d, e := os.Stat(dir)
 	switch {
 	case e != nil:
+		if len(err) != 0 {
+			*err[0] = e
+		}
 		return false
 	case !d.IsDir():
 		return false
