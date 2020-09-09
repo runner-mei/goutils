@@ -137,9 +137,12 @@ func DirExists(dir string, err ...*error) bool {
 	return true
 }
 
-func IsDirectory(dir string) bool {
+func IsDirectory(dir string, e ...*error) bool {
 	info, err := os.Stat(dir)
 	if err != nil {
+		if len(e) != 0 {
+			*e[0] = err
+		}
 		return false
 	}
 
