@@ -650,7 +650,7 @@ func TestLoginClientA1(t *testing.T) {
 		AutoRedirectEnabled: "false",
 	}
 
-	client := New()
+	client := New("", "")
 	var out bytes.Buffer
 	_, msgs, err := Login(nil, &client, params, &out)
 	if err != nil {

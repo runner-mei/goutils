@@ -3,6 +3,7 @@ package httpauth
 import (
 	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
@@ -88,15 +89,46 @@ func (params *LoginParams) BaseURL() string {
 	}
 	return protocol + "://" + address
 }
-func New() http.Client {
+
+func New(minTlsVersion, maxTlsVersion string) http.Client {
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
 		panic(err)
 	}
+	min := parseTlsVersion(minTlsVersion)
+	max := parseTlsVersion(maxTlsVersion)
 
+	transport := httputil.InsecureHttpTransport
+	if min > 0 || max > 0 {
+		cfg := &tls.Config{
+			InsecureSkipVerify: true,
+		}
+		if transport.TLSClientConfig != nil {
+			*cfg = *transport.TLSClientConfig
+		}
+		cfg.MinVersion = min
+		cfg.MaxVersion = max
+
+		transport.TLSClientConfig = cfg
+	}
 	return http.Client{
-		Transport: httputil.InsecureHttpTransport,
+		Transport: transport,
 		Jar:       cookieJar,
+	}
+}
+
+func parseTlsVersion(s string) uint16 {
+	switch s {
+	case "tls10":
+		return tls.VersionTLS10
+	case "tls11":
+		return tls.VersionTLS11
+	case "tls12":
+		return tls.VersionTLS12
+	case "tls13":
+		return tls.VersionTLS13
+	default:
+		return 0
 	}
 }
 
