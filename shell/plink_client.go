@@ -5,12 +5,21 @@ import (
 	"net"
 	"os"
 	"os/exec"
+	"path/filepath"
 
 	"github.com/runner-mei/errors"
 	"github.com/runner-mei/goutils/util"
 )
 
-var PlinkPath = "runtime_env/putty/plink.exe"
+var (
+	PlinkPath = "runtime_env/putty/plink.exe"
+	binDir    string
+)
+
+func init() {
+	pa, _ := os.Executable()
+	binDir = filepath.Dir(pa)
+}
 
 func init() {
 	if util.IsWindows {
@@ -18,6 +27,11 @@ func init() {
 			pa := "C:\\Program Files\\hengwei\\runtime_env\\putty\\plink.exe"
 			if fi, err = os.Stat(pa); err == nil && !fi.IsDir() {
 				PlinkPath = pa
+			} else {
+				pa = filepath.Join(binDir, "plink.exe")
+				if fi, err = os.Stat(pa); err == nil && !fi.IsDir() {
+					PlinkPath = pa
+				}
 			}
 		}
 	}

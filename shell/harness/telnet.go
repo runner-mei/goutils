@@ -103,6 +103,11 @@ func telnetLogin(ctx context.Context, c shell.Conn, params *TelnetParam, opts *o
 		prompts = [][]byte{[]byte(params.Prompt)}
 	}
 
+	if shell.IsNonePassword([]byte(params.Password)) && shell.IsNoneUsername([]byte(params.Username)) {
+		prompt, err := shell.ReadPrompt(ctx, c, prompts)
+		return c, prompt, err
+	}
+
 	var userPrompts [][]byte
 	if params.UsernameQuest != "" {
 		userPrompts = [][]byte{[]byte(params.UsernameQuest)}

@@ -33,6 +33,7 @@ var (
 	h3cSuperResponse  = []byte("User privilege level is")
 	anonymousPassword = []byte("<<anonymous>>")
 	nonePassword      = []byte("<<none>>")
+	noneUsername      = []byte("<<none>>")
 	emptyPassword     = []byte("<<empty>>")
 	defaultEnableCmd  = []byte("enable")
 
@@ -62,8 +63,16 @@ var SayYesCRLF = func(conn Conn, idx int) (bool, error) {
 	conn.Sendln([]byte("y"))
 	return true, nil
 }
+var SayCRLF = func(conn Conn, idx int) (bool, error) {
+	conn.Sendln([]byte(""))
+	return true, nil
+}
 var SayNoCRLF = func(conn Conn, idx int) (bool, error) {
 	conn.Sendln([]byte("N"))
+	return true, nil
+}
+var SaySpace = func(conn Conn, idx int) (bool, error) {
+	conn.Send([]byte(" "))
 	return true, nil
 }
 
@@ -91,7 +100,7 @@ var (
 	StoreKeyInCache        = Match("Store key in cache? (y/n)", SayYes)
 	ContinueWithConnection = Match("Continue with connection? (y/n)", SayYes)
 	UpdateCachedKey        = Match("Update cached key? (y/n, Return cancels connection)", SayYes)
-	More                   = Match(MorePrompts, SayYes)
+	More                   = Match(MorePrompts, SaySpace)
 
 	DefaultMatchers = []Matcher{
 		StoreKeyInCache,
@@ -106,6 +115,10 @@ func init() {
 		DefaultMatchers = append(DefaultMatchers,
 			Match(prompt, ReturnErr(errors.WrapWithSuffix(errors.ErrPermission, string(prompt)))))
 	}
+}
+
+func IsNoneUsername(username []byte) bool {
+	return bytes.Equal(username, noneUsername)
 }
 
 func IsNonePassword(password []byte) bool {
@@ -191,7 +204,7 @@ func Match(prompts interface{}, cb func(Conn, int) (bool, error)) Matcher {
 	}
 }
 
-const maxRetryCount = 100
+const maxRetryCount = 1000
 
 func Expect(ctx context.Context, conn Conn, matchs ...Matcher) error {
 	var matchIdxs = make([]int, 0, len(matchs)+len(DefaultMatchers))

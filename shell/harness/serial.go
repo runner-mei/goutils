@@ -87,6 +87,11 @@ func DailSerial(ctx context.Context, params *SerialParam, args ...Option) (shell
 		c2()
 	}()
 
+	_, err = c.Write([]byte("\n"))
+	if err != nil {
+		return nil, nil, err
+	}
+
 	return telnetLogin(ctx, c, &TelnetParam{
 		UsernameQuest:       params.UsernameQuest,
 		Username:            params.Username,
