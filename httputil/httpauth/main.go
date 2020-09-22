@@ -302,6 +302,9 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 		if err != nil {
 			return nil, logMessages, err
 		}
+		if values == nil {
+			values = url.Values{}
+		}
 	}
 
 	usernameform := "username"
