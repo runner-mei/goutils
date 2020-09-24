@@ -97,7 +97,7 @@ var ReturnErr = func(err error) func(conn Conn, idx int) (bool, error) {
 
 // 常见的提问
 var (
-	ChangeNow              = Match("Change now? [Y/N]", SayNo)
+	ChangeNow              = Match("Change now? [Y/N]", SayNoCRLF)
 	StoreKeyInCache        = Match("Store key in cache? (y/n)", SayYes)
 	ContinueWithConnection = Match("Continue with connection? (y/n)", SayYes)
 	UpdateCachedKey        = Match("Update cached key? (y/n, Return cancels connection)", SayYes)
