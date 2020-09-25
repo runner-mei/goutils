@@ -97,7 +97,7 @@ var ReturnErr = func(err error) func(conn Conn, idx int) (bool, error) {
 
 // 常见的提问
 var (
-	ChangeNow              = Match("Change now? [Y/N]", SayNoCRLF)
+	ChangeNow              = Match("Change now? [Y/N]:", SayNoCRLF)
 	StoreKeyInCache        = Match("Store key in cache? (y/n)", SayYes)
 	ContinueWithConnection = Match("Continue with connection? (y/n)", SayYes)
 	UpdateCachedKey        = Match("Update cached key? (y/n, Return cancels connection)", SayYes)
@@ -412,6 +412,7 @@ func GetPrompt(bs []byte, prompts [][]byte) []byte {
 	if len(bs) == 0 {
 		return nil
 	}
+
 	lines := util.SplitLines(bs)
 
 	var fullPrompt []byte
