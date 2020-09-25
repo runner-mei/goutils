@@ -10,8 +10,6 @@ import (
 	"github.com/runner-mei/goutils/shell"
 )
 
-var ChangeNowQuestion = shell.Match("Change now? [Y/N]:", shell.SayNoCRLF)
-
 type DoFunc func(conn *Shell, idx int) (bool, error)
 
 type ExecuteResult struct {
