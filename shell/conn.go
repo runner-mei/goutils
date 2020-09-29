@@ -28,4 +28,4 @@ type Conn interface {
 	Expect([][]byte) (int, []byte, error)
 }
 
-type DoFunc func(conn Conn, idx int) (bool, error)
+type DoFunc func(conn Conn, bs []byte, idx int) (bool, error)

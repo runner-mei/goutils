@@ -402,7 +402,7 @@ var Parsers = map[string]func(*Script, int, string, []byte) error{
 		if len(copyed) > 0 {
 			to, err := time.ParseDuration(string(copyed))
 			if err != nil {
-				return errors.New("timeout is invalid - " + string(to))
+				return errors.New("timeout is invalid - " + string(copyed))
 			}
 			timeout = to
 		}
@@ -499,7 +499,7 @@ var Parsers = map[string]func(*Script, int, string, []byte) error{
 		if len(copyed) > 0 {
 			to, err := time.ParseDuration(string(copyed))
 			if err != nil {
-				return errors.New("read_timeout is invalid - " + string(to))
+				return errors.New("read_timeout is invalid - " + string(copyed))
 			}
 			timeout = to
 		}

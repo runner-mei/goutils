@@ -103,29 +103,36 @@ func telnetLogin(ctx context.Context, c shell.Conn, params *TelnetParam, opts *o
 		prompts = [][]byte{[]byte(params.Prompt)}
 	}
 
+	var err error
+	var prompt []byte
 	if shell.IsNonePassword([]byte(params.Password)) && shell.IsNoneUsername([]byte(params.Username)) {
-		prompt, err := shell.ReadPrompt(ctx, c, prompts)
-		return c, prompt, err
-	}
+		if !opts.skipPrompt {
+			prompt, err = shell.ReadPrompt(ctx, c, prompts)
+			if err != nil {
+				c.Close()
+				return nil, nil, err
+			}
+		}
+	} else {
+		var userPrompts [][]byte
+		if params.UsernameQuest != "" {
+			userPrompts = [][]byte{[]byte(params.UsernameQuest)}
+		}
+		var passwordPrompts [][]byte
+		if params.PasswordQuest != "" {
+			passwordPrompts = [][]byte{[]byte(params.PasswordQuest)}
+		}
 
-	var userPrompts [][]byte
-	if params.UsernameQuest != "" {
-		userPrompts = [][]byte{[]byte(params.UsernameQuest)}
-	}
-	var passwordPrompts [][]byte
-	if params.PasswordQuest != "" {
-		passwordPrompts = [][]byte{[]byte(params.PasswordQuest)}
-	}
+		prompt, err = shell.UserLogin(ctx, c, userPrompts, []byte(params.Username), passwordPrompts, []byte(params.Password), prompts, opts.questions...)
+		if err != nil {
+			c.Close()
+			return nil, nil, err
+		}
 
-	prompt, err := shell.UserLogin(ctx, c, userPrompts, []byte(params.Username), passwordPrompts, []byte(params.Password), prompts, opts.questions...)
-	if err != nil {
-		c.Close()
-		return nil, nil, err
-	}
-
-	if opts.skipPrompt {
-		c.Close()
-		return nil, nil, errors.New("便用 Telnet 时不支持 skipPrompt 选项")
+		if opts.skipPrompt {
+			c.Close()
+			return nil, nil, errors.New("便用 Telnet 时不支持 skipPrompt 选项")
+		}
 	}
 
 	if opts.skipEnable {

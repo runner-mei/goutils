@@ -68,7 +68,7 @@ func (s *Shell) AddQuestions(questions ...shell.Matcher) {
 }
 
 func (s *Shell) On(question interface{}, answer DoFunc) {
-	cb := shell.DoFunc(func(conn shell.Conn, idx int) (bool, error) {
+	cb := shell.DoFunc(func(conn shell.Conn, bs []byte, idx int) (bool, error) {
 		if s.Conn == nil {
 			s.Conn = conn // 可能是正在连接中
 		}
@@ -79,7 +79,7 @@ func (s *Shell) On(question interface{}, answer DoFunc) {
 }
 
 func (s *Shell) OnFail(question string) {
-	s.questions = append(s.questions, shell.Match(question, func(conn shell.Conn, idx int) (bool, error) {
+	s.questions = append(s.questions, shell.Match(question, func(conn shell.Conn, bs []byte, idx int) (bool, error) {
 		return false, errors.New("收到错误消息: " + question)
 	}))
 }

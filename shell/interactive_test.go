@@ -10,8 +10,8 @@ import (
 func TestExpect2(t *testing.T) {
 
 	var idx string
-	makeFunc := func(prefix string) func(conn Conn, i int) (bool, error) {
-		return func(conn Conn, i int) (bool, error) {
+	makeFunc := func(prefix string) func(conn Conn, bs []byte, i int) (bool, error) {
+		return func(conn Conn, bs []byte, i int) (bool, error) {
 			idx = prefix + strconv.FormatInt(int64(i), 10)
 			return false, nil
 		}

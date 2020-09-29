@@ -49,6 +49,45 @@ func TestTelnetSimSimple(t *testing.T) {
 	testSimSimple(t, ctx, conn, prompt)
 }
 
+func TestTelnetSimWithNoUserNoPassword(t *testing.T) {
+	options := &telnetd.Options{}
+	options.AddUserPassword("<<none>>", "<<none>>")
+
+	//options.WithEnable("ABC>", "enable", "password:", "testsx", "","abc#", sshd.Echo)
+	options.WithNoEnable("ABC>", sshd.Echo)
+
+	listener, err := telnetd.StartServer(":", options)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer listener.Close()
+
+	port := listener.Port()
+	ctx := context.Background()
+
+	telnetConn, err := DialTelnetTimeout("tcp", net.JoinHostPort("127.0.0.1", port), 1*time.Second)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn := TelnetWrap(telnetConn, nil, nil)
+
+	defer conn.Close()
+
+	conn.UseCRLF()
+	conn.SetReadDeadline(1 * time.Second)
+
+	prompt, err := UserLogin(ctx, conn, nil, []byte("abc"), nil, []byte("123"), nil)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	testSimSimple(t, ctx, conn, prompt)
+}
+
 func TestTelnetSimSimpleWithLastLogin(t *testing.T) {
 	options := &telnetd.Options{}
 	options.AddUserPassword("abc", "123")
@@ -132,6 +171,43 @@ func TestTelnetSimWithEnable(t *testing.T) {
 	testSimWithEnable(t, ctx, conn, prompt, "enable", "testsx")
 }
 
+func TestTelnetSimWithNoUserNoPasswordWithEnable(t *testing.T) {
+	options := &telnetd.Options{}
+	options.AddUserPassword("<<none>>", "<<none>>")
+
+	options.WithEnable("ABC>", "enable", "password:", "testsx", "", "abc#", sshd.Echo)
+	//options.WithNoEnable("ABC>", sshd.Echo)
+
+	listener, err := telnetd.StartServer(":", options)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer listener.Close()
+
+	port := listener.Port()
+	ctx := context.Background()
+
+	telnetConn, err := DialTelnetTimeout("tcp", net.JoinHostPort("127.0.0.1", port), 1*time.Second)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn := TelnetWrap(telnetConn, nil, nil)
+	defer conn.Close()
+
+	conn.UseCRLF()
+	conn.SetReadDeadline(1 * time.Second)
+	prompt, err := UserLogin(ctx, conn, nil, []byte("abc"), nil, []byte("123"), nil, answerNo)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	testSimWithEnable(t, ctx, conn, prompt, "enable", "testsx")
+}
+
 func TestTelnetSimWithEnableNonePassword(t *testing.T) {
 	options := &telnetd.Options{}
 	options.AddUserPassword("abc", "123")
@@ -167,6 +243,43 @@ func TestTelnetSimWithEnableNonePassword(t *testing.T) {
 		return
 	}
 	testSimWithEnable(t, ctx, conn, prompt, "enable", "<<none>>")
+}
+
+func TestTelnetSimWithEnableNonePasswordButUserInputEnPassword(t *testing.T) {
+	options := &telnetd.Options{}
+	options.AddUserPassword("abc", "123")
+
+	options.WithEnable("ABC>", "enable", "password:", "<<none>>", "", "abc#", sshd.Echo)
+	//options.WithNoEnable("ABC>", sshd.Echo)
+
+	listener, err := telnetd.StartServer(":", options)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	defer listener.Close()
+
+	port := listener.Port()
+	ctx := context.Background()
+
+	telnetConn, err := DialTelnetTimeout("tcp", net.JoinHostPort("127.0.0.1", port), 1*time.Second)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	conn := TelnetWrap(telnetConn, nil, nil)
+	defer conn.Close()
+
+	conn.UseCRLF()
+	conn.SetReadDeadline(1 * time.Second)
+
+	prompt, err := UserLogin(ctx, conn, nil, []byte("abc"), nil, []byte("123"), nil, answerNo)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	testSimWithEnable(t, ctx, conn, prompt, "enable", "not_exist_password")
 }
 
 func TestTelnetSimWithEnableEmptyPassword(t *testing.T) {

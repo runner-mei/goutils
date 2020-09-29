@@ -59,38 +59,38 @@ var (
 	}
 )
 
-var SayYesCRLF = func(conn Conn, idx int) (bool, error) {
+var SayYesCRLF = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Sendln([]byte("y"))
 	return true, nil
 }
-var SayCRLF = func(conn Conn, idx int) (bool, error) {
+var SayCRLF = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Sendln([]byte(""))
 	return true, nil
 }
-var SayNoCRLF = func(conn Conn, idx int) (bool, error) {
+var SayNoCRLF = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Sendln([]byte("N"))
 	return true, nil
 }
-var SaySpace = func(conn Conn, idx int) (bool, error) {
+var SaySpace = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Send([]byte(" "))
 	return true, nil
 }
 
-var SayYes = func(conn Conn, idx int) (bool, error) {
+var SayYes = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Send([]byte("y"))
 	return true, nil
 }
-var SayNo = func(conn Conn, idx int) (bool, error) {
+var SayNo = func(conn Conn, bs []byte, idx int) (bool, error) {
 	conn.Send([]byte("N"))
 	return true, nil
 }
 
-var ReturnOK = func(conn Conn, idx int) (bool, error) {
+var ReturnOK = func(conn Conn, bs []byte, idx int) (bool, error) {
 	return false, nil
 }
 
-var ReturnErr = func(err error) func(conn Conn, idx int) (bool, error) {
-	return func(conn Conn, idx int) (bool, error) {
+var ReturnErr = func(err error) func(conn Conn, bs []byte, idx int) (bool, error) {
+	return func(conn Conn, bs []byte, idx int) (bool, error) {
 		return false, err
 	}
 }
@@ -179,7 +179,7 @@ func (s *bytesMatcher) Do() DoFunc {
 	return s.do
 }
 
-func Match(prompts interface{}, cb func(Conn, int) (bool, error)) Matcher {
+func Match(prompts interface{}, cb func(Conn, []byte, int) (bool, error)) Matcher {
 	switch values := prompts.(type) {
 	case []string:
 		return &stringMatcher{
@@ -256,11 +256,10 @@ func Expect(ctx context.Context, conn Conn, matchs ...Matcher) error {
 		} else {
 			cb = DefaultMatchers[foundMatchIndex-len(matchs)].Do()
 		}
-		more, err = cb(conn, idx-matchIdxs[foundMatchIndex])
+		more, err = cb(conn, recvBytes, idx-matchIdxs[foundMatchIndex])
 		if err != nil {
 			return err
 		}
-
 		if !more {
 			return nil
 		}
@@ -287,14 +286,14 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 	status := 0
 
 	copyed := make([]Matcher, len(matchs)+5)
-	copyed[0] = Match(userPrompts, func(c Conn, nidx int) (bool, error) {
+	copyed[0] = Match(userPrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
 		if e := conn.Sendln(username); e != nil {
 			return false, errors.Wrap(e, "send username failed")
 		}
 		status = 1
 		return false, nil
 	})
-	copyed[1] = Match(passwordPrompts, func(c Conn, nidx int) (bool, error) {
+	copyed[1] = Match(passwordPrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
 		if IsEmptyPassword(password) {
 			password = []byte{}
 		}
@@ -305,17 +304,17 @@ func UserLogin(ctx context.Context, conn Conn, userPrompts [][]byte, username []
 		status = 2
 		return false, nil
 	})
-	copyed[2] = Match(prompts, func(c Conn, nidx int) (bool, error) {
+	copyed[2] = Match(prompts, func(c Conn, bs []byte, nidx int) (bool, error) {
 		status = 3
 		return false, nil
 	})
 
-	copyed[3] = Match(defaultErrorPrompts, func(c Conn, nidx int) (bool, error) {
+	copyed[3] = Match(defaultErrorPrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
 		status = 4
 		return false, nil
 	})
 
-	copyed[4] = Match(defaultPermissionPrompts, func(c Conn, nidx int) (bool, error) {
+	copyed[4] = Match(defaultPermissionPrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
 		status = 5
 		return false, nil
 	})
@@ -376,7 +375,7 @@ func ReadPrompt(ctx context.Context, conn Conn, prompts [][]byte, matchs ...Matc
 	isPrompt := false
 
 	copyed := make([]Matcher, len(matchs)+1)
-	copyed[0] = Match(prompts, func(conn Conn, idx int) (bool, error) {
+	copyed[0] = Match(prompts, func(conn Conn, bs []byte, idx int) (bool, error) {
 		isPrompt = true
 		return false, nil
 	})
@@ -465,7 +464,7 @@ func Exec(ctx context.Context, conn Conn, prompt, cmd []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	err = Expect(ctx, conn, Match(prompt, func(Conn, int) (bool, error) {
+	err = Expect(ctx, conn, Match(prompt, func(Conn, []byte, int) (bool, error) {
 		return false, nil
 	}))
 
@@ -502,8 +501,15 @@ func WithEnable(ctx context.Context, conn Conn, enableCmd []byte, passwordPrompt
 	// fmt.Println("send enable '" + string(enableCmd) + "' ok and read enable password prompt")
 
 	if !IsNonePassword(password) {
+		var isPrompt bool
+		var output []byte
 		err := Expect(ctx, conn,
-			Match(append(passwordPrompts, h3cSuperResponse), func(c Conn, nidx int) (bool, error) {
+			Match(enablePrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
+				isPrompt = true
+				output = bs
+				return false, nil
+			}),
+			Match(append(passwordPrompts, h3cSuperResponse), func(c Conn, bs []byte, nidx int) (bool, error) {
 				if IsEmptyPassword(password) {
 					password = []byte{}
 				}
@@ -514,6 +520,14 @@ func WithEnable(ctx context.Context, conn Conn, enableCmd []byte, passwordPrompt
 			}))
 		if err != nil {
 			return nil, err
+		}
+
+		if isPrompt {
+			prompt := GetPrompt(output, enablePrompts)
+			if len(prompt) == 0 {
+				return nil, errors.New("read prompt '" + string(bytes.Join(enablePrompts, []byte(","))) + "' failed: \r\n" + ToHexStringIfNeed(output))
+			}
+			return prompt, nil
 		}
 	}
 	return ReadPrompt(ctx, conn, enablePrompts)

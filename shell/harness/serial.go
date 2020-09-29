@@ -20,7 +20,7 @@ type SerialParam struct {
 	Password            string `json:"password,omitempty" xml:"password,omitempty" form:"password,omitempty" query:"serial.user_password,omitempty"`
 	Prompt              string `json:"prompt,omitempty" xml:"prompt,omitempty" form:"prompt,omitempty" query:"serial.prompt,omitempty"`
 	EnableCommand       string `json:"enable_command,omitempty" xml:"enable_command,omitempty" form:"enable_command,omitempty" query:"serial.enable_command,omitempty"`
-	EnablePasswordQuest string `json:"enable_password_quest,omitempty" xml:"enable_password_quest,omitempty" form:"enable_password_quest,omitempty" query:"telnet.enable_password_quest"`
+	EnablePasswordQuest string `json:"enable_password_quest,omitempty" xml:"enable_password_quest,omitempty" form:"enable_password_quest,omitempty" query:"serial.enable_password_quest"`
 	EnablePassword      string `json:"enable_password,omitempty" xml:"enable_password,omitempty" form:"enable_password,omitempty" query:"serial.enable_password,omitempty"`
 	EnablePrompt        string `json:"enable_prompt,omitempty" xml:"enable_prompt,omitempty" form:"enable_prompt,omitempty" query:"serial.enable_prompt,omitempty"`
 	UseCRLF             bool   `json:"use_crlf,omitempty" xml:"use_crlf,omitempty" form:"use_crlf,omitempty" query:"serial.use_crlf,omitempty"`
