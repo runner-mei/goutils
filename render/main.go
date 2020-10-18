@@ -373,49 +373,23 @@ var TemplateFuncs = template.FuncMap{
 	},
 }
 
-func EmbededJSFile(baseURL string, read func(string) ([]byte, error)) func(filename string) htmltemplate.JS {
-	cb := embededFile(baseURL, read)
-
+func EmbededJSFile(read func(string) ([]byte, error)) func(filename string) htmltemplate.JS {
 	return func(filename string) htmltemplate.JS {
-		s := cb(filename)
-		return htmltemplate.JS(s)
-	}
-}
-
-func EmbededCSSFile(baseURL string, read func(string) ([]byte, error)) func(filename string) htmltemplate.CSS {
-	cb := embededFile(baseURL, read)
-
-	return func(filename string) htmltemplate.CSS  {
-		s := cb(filename)
-		return htmltemplate.CSS(s)
-	}
-}
-
-func embededFile(baseURL string, read func(string) ([]byte, error)) func(filename string) string {
-	hasSlash := strings.HasSuffix(baseURL, "/")
-
-	return func(filename string) string {
-		if !strings.Contains(filename, "://") {
-			if hasSlash {
-				if strings.HasPrefix(filename, "/") {
-					filename = baseURL + filename[1:]
-				} else {
-					filename = baseURL + filename
-				}
-			} else {
-				if strings.HasPrefix(filename, "/") {
-					filename = baseURL + filename
-				} else {
-					filename = baseURL + "/" + filename
-				}
-			}
-		}
-
 		bs, err := read(filename)
 		if err != nil {
-			return string(`// ` + filename + ":" + err.Error())
+			return htmltemplate.JS(string(`// ` + filename + ":" + err.Error()))
 		}
-		return string(bs)
+		return htmltemplate.JS(string(bs))
+	}
+}
+
+func EmbededCSSFile(read func(string) ([]byte, error)) func(filename string) htmltemplate.CSS {
+	return func(filename string) htmltemplate.CSS {
+		bs, err := read(filename)
+		if err != nil {
+			return htmltemplate.CSS(string(`// ` + filename + ":" + err.Error()))
+		}
+		return htmltemplate.CSS(string(bs))
 	}
 }
 
