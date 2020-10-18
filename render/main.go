@@ -19,7 +19,6 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
-	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -374,8 +373,8 @@ var TemplateFuncs = template.FuncMap{
 	},
 }
 
-func EmbededJSFile(baseURL string) func(filename string) htmltemplate.JS {
-	cb := embededFile(baseURL)
+func EmbededJSFile(baseURL string, read func(string) ([]byte, error)) func(filename string) htmltemplate.JS {
+	cb := embededFile(baseURL, read)
 
 	return func(filename string) htmltemplate.JS {
 		s := cb(filename)
@@ -383,8 +382,8 @@ func EmbededJSFile(baseURL string) func(filename string) htmltemplate.JS {
 	}
 }
 
-func EmbededCSSFile(baseURL string) func(filename string) htmltemplate.CSS {
-	cb := embededFile(baseURL)
+func EmbededCSSFile(baseURL string, read func(string) ([]byte, error)) func(filename string) htmltemplate.CSS {
+	cb := embededFile(baseURL, read)
 
 	return func(filename string) htmltemplate.CSS  {
 		s := cb(filename)
@@ -392,7 +391,7 @@ func EmbededCSSFile(baseURL string) func(filename string) htmltemplate.CSS {
 	}
 }
 
-func embededFile(baseURL string) func(filename string) string {
+func embededFile(baseURL string, read func(string) ([]byte, error)) func(filename string) string {
 	hasSlash := strings.HasSuffix(baseURL, "/")
 
 	return func(filename string) string {
@@ -412,18 +411,9 @@ func embededFile(baseURL string) func(filename string) string {
 			}
 		}
 
-		response, err := http.Get(filename)
+		bs, err := read(filename)
 		if err != nil {
 			return string(`// ` + filename + ":" + err.Error())
-		}
-
-		bs, err := ioutil.ReadAll(response.Body)
-		if err != nil {
-			return string(`// ` + filename + ":" + err.Error())
-		}
-
-		if response.StatusCode != http.StatusOK {
-			return string(`// ` + filename + ":" + string(bs))
 		}
 		return string(bs)
 	}
