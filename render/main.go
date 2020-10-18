@@ -19,6 +19,7 @@ import (
 	"io/ioutil"
 	"log"
 	"math"
+	"net/http"
 	"net/url"
 	"path/filepath"
 	"strconv"
@@ -371,6 +372,61 @@ var TemplateFuncs = template.FuncMap{
 		u.RawQuery = query.Encode()
 		return u.String()
 	},
+}
+
+func EmbededJSFile(baseURL string) func(filename string) htmltemplate.JS {
+	cb := embededFile(baseURL)
+
+	return func(filename string) htmltemplate.JS {
+		s := cb(filename)
+		return htmltemplate.JS(s)
+	}
+}
+
+func EmbededCSSFile(baseURL string) func(filename string) htmltemplate.CSS {
+	cb := embededFile(baseURL)
+
+	return func(filename string) htmltemplate.CSS  {
+		s := cb(filename)
+		return htmltemplate.CSS(s)
+	}
+}
+
+func embededFile(baseURL string) func(filename string) string {
+	hasSlash := strings.HasSuffix(baseURL, "/")
+
+	return func(filename string) string {
+		if !strings.Contains(filename, "://") {
+			if hasSlash {
+				if strings.HasPrefix(filename, "/") {
+					filename = baseURL + filename[1:]
+				} else {
+					filename = baseURL + filename
+				}
+			} else {
+				if strings.HasPrefix(filename, "/") {
+					filename = baseURL + filename
+				} else {
+					filename = baseURL + "/" + filename
+				}
+			}
+		}
+
+		response, err := http.Get(filename)
+		if err != nil {
+			return string(`// ` + filename + ":" + err.Error())
+		}
+
+		bs, err := ioutil.ReadAll(response.Body)
+		if err != nil {
+			return string(`// ` + filename + ":" + err.Error())
+		}
+
+		if response.StatusCode != http.StatusOK {
+			return string(`// ` + filename + ":" + string(bs))
+		}
+		return string(bs)
+	}
 }
 
 func init() {
