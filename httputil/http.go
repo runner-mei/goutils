@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"compress/gzip"
 	"io"
+	"log"
 	"io/ioutil"
 	"net/http"
 	nhttputil "net/http/httputil"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/runner-mei/goutils/netutil"
 	"github.com/runner-mei/goutils/util"
+	"github.com/runner-mei/goutils/crypto"
 	"github.com/runner-mei/resty"
 )
 
@@ -93,3 +95,27 @@ func Dump(dumpOut io.Writer, reqPrefix string, req *http.Request, reqBody io.Rea
 		// dumpOut.Write(body)
 	}
 }
+
+func EncryptWrap(key string, handler http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		newWriter := NewResponse(w)
+		handler.ServeHTTP(newWriter, r)
+
+		if newWriter.Buffer.Len() > 0 {
+			bs, err := crypto.Encrypt([]byte(key), newWriter.Buffer.Bytes())
+			if err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				io.WriteString(w, err.Error())
+			} else {
+				w.WriteHeader(newWriter.Status)
+				_, err = w.Write(bs)
+				if err != nil {
+					log.Println(err)
+				}
+			}
+		}
+	})
+}
+
+
+
