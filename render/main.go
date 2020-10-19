@@ -373,21 +373,21 @@ var TemplateFuncs = template.FuncMap{
 	},
 }
 
-func EmbededJSFile(read func(string) ([]byte, error)) func(filename string) htmltemplate.JS {
-	return func(filename string) htmltemplate.JS {
-		bs, err := read(filename)
+func EmbededJSFile(read func(interface{}, string) ([]byte, error)) func(ctx interface{}, filename string) htmltemplate.JS {
+	return func(ctx interface{}, filename string) htmltemplate.JS {
+		bs, err := read(ctx, filename)
 		if err != nil {
-			return htmltemplate.JS(string(`// ` + filename + ":" + err.Error()))
+			return htmltemplate.JS(string("/* " + filename + ":" + err.Error() + " */"))
 		}
 		return htmltemplate.JS(string(bs))
 	}
 }
 
-func EmbededCSSFile(read func(string) ([]byte, error)) func(filename string) htmltemplate.CSS {
-	return func(filename string) htmltemplate.CSS {
-		bs, err := read(filename)
+func EmbededCSSFile(read func(interface{}, string) ([]byte, error)) func(ctx interface{}, filename string) htmltemplate.CSS {
+	return func(ctx interface{}, filename string) htmltemplate.CSS {
+		bs, err := read(ctx, filename)
 		if err != nil {
-			return htmltemplate.CSS(string(`// ` + filename + ":" + err.Error()))
+			return htmltemplate.CSS(string("/* " + filename + ":" + err.Error() + " */"))
 		}
 		return htmltemplate.CSS(string(bs))
 	}
