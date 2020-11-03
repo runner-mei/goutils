@@ -90,6 +90,27 @@ func (params *LoginParams) BaseURL() string {
 	return protocol + "://" + address
 }
 
+func NewTransport(insecureSkipVerify bool, minTlsVersion, maxTlsVersion string) *http.Transport {
+	cfg := &tls.Config{
+		InsecureSkipVerify: insecureSkipVerify,
+	}
+
+	min := parseTlsVersion(minTlsVersion)
+	if min > 0 {
+		cfg.MinVersion = min
+	}
+
+	max := parseTlsVersion(maxTlsVersion)
+	if max > 0 {
+		cfg.MaxVersion = max
+	}
+
+	return &http.Transport{
+		Proxy:           http.ProxyFromEnvironment,
+		TLSClientConfig: cfg,
+	}
+}
+
 func New(minTlsVersion, maxTlsVersion string) http.Client {
 	cookieJar, err := cookiejar.New(nil)
 	if err != nil {
@@ -110,6 +131,17 @@ func New(minTlsVersion, maxTlsVersion string) http.Client {
 		cfg.MaxVersion = max
 
 		transport.TLSClientConfig = cfg
+	}
+	return http.Client{
+		Transport: transport,
+		Jar:       cookieJar,
+	}
+}
+
+func NewWithTransport(transport *http.Transport) http.Client {
+	cookieJar, err := cookiejar.New(nil)
+	if err != nil {
+		panic(err)
 	}
 	return http.Client{
 		Transport: transport,
