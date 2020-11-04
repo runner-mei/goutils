@@ -80,6 +80,7 @@ type LoginParams struct {
 	LogoutURL             string `json:"logout_url,omitempty"`
 	LogoutContentType     string `json:"logout_content_type,omitempty"`
 	LogoutBody            string `json:"logout_body,omitempty"`
+	ExceptedLogoutStatus  int    `json:"excepted_logout_status_code,omitempty"`
 	ExceptedLogoutContent string `json:"excepted_logout_content,omitempty"`
 }
 
@@ -392,7 +393,8 @@ func Logout(ctx context.Context, client *http.Client, params *LoginParams, dumpO
 		"\r\n========= logout DumpRequest =========\r\n", logoutReq, strings.NewReader(params.LogoutBody),
 		"\r\n========= logout DumpResponse =========\r\n", logoutResp, nil)
 
-	if logoutResp.StatusCode < 200 || logoutResp.StatusCode > 299 {
+	if (params.ExceptedLogoutStatus == 0 && (logoutResp.StatusCode < 200 || logoutResp.StatusCode > 299)) ||
+		(params.ExceptedLogoutStatus > 0 && params.ExceptedLogoutStatus != logoutResp.StatusCode) {
 		body, err := ioutil.ReadAll(logoutResp.Body)
 		if err != nil {
 			logMessages = append(logMessages, "发送登出请求成功， 但响应码不正确")
