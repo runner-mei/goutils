@@ -96,17 +96,21 @@ func (params *LoginParams) BaseURL() string {
 	return protocol + "://" + address
 }
 
-func NewTransport(insecureSkipVerify bool, minTlsVersion, maxTlsVersion string) *http.Transport {
+func NewTransport(insecureSkipVerify bool, minTlsVersion, maxTlsVersion string) (*http.Transport, bool) {
+	min := parseTlsVersion(minTlsVersion)
+	max := parseTlsVersion(maxTlsVersion)
+
+	if min == 0 && max == 0 {
+		return httputil.InsecureHttpTransport, false
+	}
 	cfg := &tls.Config{
 		InsecureSkipVerify: insecureSkipVerify,
 	}
 
-	min := parseTlsVersion(minTlsVersion)
 	if min > 0 {
 		cfg.MinVersion = min
 	}
 
-	max := parseTlsVersion(maxTlsVersion)
 	if max > 0 {
 		cfg.MaxVersion = max
 	}
@@ -114,7 +118,7 @@ func NewTransport(insecureSkipVerify bool, minTlsVersion, maxTlsVersion string) 
 	return &http.Transport{
 		Proxy:           http.ProxyFromEnvironment,
 		TLSClientConfig: cfg,
-	}
+	}, true
 }
 
 func New(minTlsVersion, maxTlsVersion string) http.Client {
@@ -310,6 +314,9 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 }
 
 func Logout(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, []string, error) {
+	if params.LogoutURL == "" {
+		return nil, nil, nil
+	}
 	baseurl := params.BaseURL()
 
 	// cookieJar, err := cookiejar.New(nil)
