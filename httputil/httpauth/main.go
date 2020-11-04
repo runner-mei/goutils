@@ -75,6 +75,12 @@ type LoginParams struct {
 	AutoRedirectEnabled string `json:"auto_redirect_enabled"`
 	AutoRedirectURL     string `json:"auto_redirect_url"`
 	Referrer            string `json:"referrer"`
+
+	LogoutMethod          string `json:"logout_method,omitempty"`
+	LogoutURL             string `json:"logout_url,omitempty"`
+	LogoutContentType     string `json:"logout_content_type,omitempty"`
+	LogoutBody            string `json:"logout_body,omitempty"`
+	ExceptedLogoutContent string `json:"excepted_logout_content,omitempty"`
 }
 
 func (params *LoginParams) BaseURL() string {
@@ -303,6 +309,110 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 	return nil, logMessages, errors.New("重定向次数太多了")
 }
 
+func Logout(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, []string, error) {
+	baseurl := params.BaseURL()
+
+	// cookieJar, err := cookiejar.New(nil)
+	// if err != nil {
+	//   return nil, err
+	// }
+
+	// client := http.Client{
+	//    Transport: httputil.InsecureHttpTransport,
+	//    Jar: cookieJar,
+	//  }
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if params.Timeout > 0 {
+		var c func()
+		ctx, c = context.WithTimeout(ctx, params.Timeout)
+		defer c()
+	}
+
+	var logMessages []string
+	var err error
+
+	var logoutMethod = "GET"
+	if params.LogoutMethod != "" {
+		logoutMethod = params.LogoutMethod
+	}
+
+	logoutURL := strings.ToLower(params.LogoutURL)
+	if strings.HasPrefix(logoutURL, "https://") || strings.HasPrefix(logoutURL, "http://") {
+		logoutURL = params.LogoutURL
+	} else {
+		logoutURL = urlutil.Join(baseurl, params.LogoutURL)
+	}
+
+	var body io.Reader
+	if logoutMethod != "GET" {
+		body = strings.NewReader(params.LogoutBody)
+	}
+	logoutReq, err := http.NewRequest(logoutMethod, logoutURL, body)
+	if err != nil {
+		logMessages = append(logMessages, "创建登出请求失败", err.Error())
+		return nil, logMessages, err
+	}
+
+	logoutReq.Header.Set("Content-Type", params.LogoutContentType)
+	logoutReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	logoutReq.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
+	logoutReq.Header.Set("Cache-Control", "max-age=0")
+	logoutReq.Header.Set("Connection", "keep-alive")
+
+	logoutResp, err := client.Do(logoutReq)
+	if nil != err {
+		logMessages = append(logMessages, "发送登出请求失败", err.Error())
+		return nil, logMessages, err
+	}
+	if logoutResp != nil {
+		body := logoutResp.Body
+		defer body.Close()
+	}
+
+	logoutResp, err = rutil.WrapUncompress(logoutResp, false)
+	if nil != err {
+		return nil, []string{"判断登出响应是否要解压失败", err.Error()}, err
+	}
+	logoutResp, err = rutil.WrapCharset(logoutResp, false)
+	if nil != err {
+		return nil, []string{"判断登出响应是否要转码失败", err.Error()}, err
+	}
+
+	httputil.Dump(dumpOut,
+		"\r\n========= logout DumpRequest =========\r\n", logoutReq, strings.NewReader(params.LogoutBody),
+		"\r\n========= logout DumpResponse =========\r\n", logoutResp, nil)
+
+	if logoutResp.StatusCode < 200 || logoutResp.StatusCode > 299 {
+		body, err := ioutil.ReadAll(logoutResp.Body)
+		if err != nil {
+			logMessages = append(logMessages, "发送登出请求成功， 但响应码不正确")
+			return nil, logMessages, errors.New("status code is '" + logoutResp.Status + "' - failed to read body")
+		}
+
+		logMessages = append(logMessages, "发送登出请求成功， 但响应码不正确")
+		return nil, logMessages, errors.New("status code is '" + logoutResp.Status + "' - " + string(body))
+	}
+
+	if params.ExceptedLogoutContent != "" {
+		body, err := ioutil.ReadAll(logoutResp.Body)
+		if err != nil {
+			logMessages = append(logMessages, "发送登出请求成功， 但读响应失败")
+			return nil, logMessages, errors.New("status code is '" + logoutResp.Status + "' - failed to read body")
+		}
+		logoutResp.Body = util.ToReadCloser(bytes.NewReader(body))
+
+		if !bytes.Contains(body, []byte(params.ExceptedLogoutContent)) {
+			logMessages = append(logMessages, "发送登出请求成功， 但响应不包含指定的字符")
+			return nil, logMessages, errors.New("excepted content not found in http body")
+		}
+	}
+
+	return logoutResp, logMessages, nil
+}
+
 func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, []string, error) {
 	baseurl := params.BaseURL()
 
@@ -401,13 +511,16 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 			bs, _ := json.Marshal(a)
 			loginBody = bs
 		default:
-
 			logMessages = append(logMessages, "contentType 不支持")
 			return nil, logMessages, errors.New("ContentType '" + contentType + "' is unsupported")
 		}
 	}
 
-	loginReq, err := http.NewRequest(loginMethod, loginURL, bytes.NewReader(loginBody))
+	var body io.Reader
+	if loginMethod != "GET" {
+		body = bytes.NewReader(loginBody)
+	}
+	loginReq, err := http.NewRequest(loginMethod, loginURL, body)
 	if err != nil {
 		logMessages = append(logMessages, "创建登录请求失败", err.Error())
 		return nil, logMessages, err
