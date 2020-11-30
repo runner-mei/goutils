@@ -538,10 +538,18 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 	}
 
 	loginReq.Header.Set("Content-Type", contentType)
-	loginReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
-	loginReq.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
-	loginReq.Header.Set("Cache-Control", "max-age=0")
-	loginReq.Header.Set("Connection", "keep-alive")
+	if accept := loginReq.Header.Get("Accept"); accept == "" {
+		loginReq.Header.Set("Accept", "text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8")
+	}
+	if acceptLang := loginReq.Header.Get("Accept-Language"); acceptLang == "" {
+		loginReq.Header.Set("Accept-Language", "zh-CN,zh;q=0.8")
+	}
+	if cacheControl := loginReq.Header.Get("Cache-Control"); cacheControl == "" {
+		loginReq.Header.Set("Cache-Control", "max-age=0")
+	}
+	if connection := loginReq.Header.Get("Connection"); connection == "" {
+		loginReq.Header.Set("Connection", "keep-alive")
+	}
 	if params.Referrer != "" {
 		loginReq.Header.Set("Referer", params.Referrer)
 	}
