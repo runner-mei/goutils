@@ -7,11 +7,13 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"io/ioutil"
 	"net"
 	"net/http"
 	"net/http/cookiejar"
+	"net/http/httptrace"
 	"net/url"
 	"path"
 	"strconv"
@@ -546,6 +548,17 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 
 	for k, v := range params.Headers {
 		loginReq.Header.Set(k, v)
+	}
+	if dumpOut != nil {
+		trace := &httptrace.ClientTrace{
+			GotConn: func(connInfo httptrace.GotConnInfo) {
+				fmt.Fprintf(dumpOut, "Got Conn: %+v\r\n", connInfo)
+			},
+			WroteHeaderField: func(key string, value []string) {
+				fmt.Fprintf(dumpOut, "WroteHeaderField: %s:%v\r\n", key, value)
+			},
+		}
+		loginReq = loginReq.WithContext(httptrace.WithClientTrace(ctx, trace))
 	}
 
 	loginResp, err := client.Do(loginReq)
