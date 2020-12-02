@@ -136,6 +136,8 @@ github.com/runner-mei/errors v0.0.0-20200904125601-fcb86f2cb824 h1:OOtcUfyFU2l/O
 github.com/runner-mei/errors v0.0.0-20200904125601-fcb86f2cb824/go.mod h1:A9g5ObsQyz8QUKR+IbHEmUlfkbrRMYLWPrtGJHzAWKs=
 github.com/runner-mei/errors v0.0.0-20201010035246-8a62d69e86eb h1:j4wED/OUq+VnCqCguRbk1GkPbxumjehD6dOi30IB0Kg=
 github.com/runner-mei/errors v0.0.0-20201010035246-8a62d69e86eb/go.mod h1:A9g5ObsQyz8QUKR+IbHEmUlfkbrRMYLWPrtGJHzAWKs=
+github.com/runner-mei/ftp v0.0.0-20180205084214-d5628ea66226 h1:D2/DN5lNxvSsCF7LMFjYrhyVHJ7tDVP5xVXgr14WhAA=
+github.com/runner-mei/ftp v0.0.0-20180205084214-d5628ea66226/go.mod h1:BJfFhvF/5DROjZd9SmN7wCiYD9Ch+bqHxy2py4eTXBY=
 github.com/runner-mei/goutils v0.0.0-20200215075957-426da768fd48/go.mod h1:42CqTCSjHgaERv57fSR2VyusWah8yI/ataFLcM+v+7g=
 github.com/runner-mei/log v1.0.0/go.mod h1:0MveRoRDnCixGyy6HUWm7+aAA+AjcLV0JU3EHg0sEJM=
 github.com/runner-mei/log v1.0.2/go.mod h1:0MveRoRDnCixGyy6HUWm7+aAA+AjcLV0JU3EHg0sEJM=

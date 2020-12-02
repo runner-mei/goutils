@@ -19,8 +19,10 @@ require (
 	github.com/mozillazg/go-slugify v0.2.0
 	github.com/mozillazg/go-unidecode v0.1.1 // indirect
 	github.com/opentracing/opentracing-go v1.2.0 // indirect
+	github.com/pkg/sftp v1.12.0
 	github.com/runner-mei/check v0.0.0-20200902111954-a7ff09abcbc9
 	github.com/runner-mei/errors v0.0.0-20201010035246-8a62d69e86eb
+	github.com/runner-mei/ftp v0.0.0-20180205084214-d5628ea66226
 	github.com/runner-mei/resty v0.0.0-20201027090334-0e59ca0b4638
 	github.com/tarm/serial v0.0.0-20180830185346-98f6abe2eb07
 	github.com/yeka/zip v0.0.0-20180914125537-d046722c6feb
