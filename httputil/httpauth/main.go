@@ -566,7 +566,11 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 				fmt.Fprintf(dumpOut, "WroteHeaderField: %s:%v\r\n", key, value)
 			},
 		}
+		if ctx == nil {
+			ctx = context.Background()
+		}
 		loginReq = loginReq.WithContext(httptrace.WithClientTrace(ctx, trace))
+
 	}
 
 	loginResp, err := client.Do(loginReq)
