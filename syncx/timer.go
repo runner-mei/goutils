@@ -14,6 +14,10 @@ type Timer struct {
 	cb        func() bool
 }
 
+func (timer *Timer) Interval() time.Duration {
+	return timer.interval
+}
+
 func (timer *Timer) Start(interval time.Duration, cb func() bool) {
 	if cb == nil {
 		panic(errors.New("argument 'cb' is nil!"))
