@@ -1,7 +1,6 @@
 package fs
 
 import (
-	"fmt"
 	"io"
 	"net"
 	"net/url"
@@ -69,10 +68,8 @@ func OpenFS(target string) (FS, error) {
 
 	switch strings.ToLower(u.Scheme) {
 	case "":
-		fmt.Println("scheme", u.Scheme, target)
 		return &osFs{dir: target}, nil
 	case "file":
-		fmt.Println(u.Path)
 		return &osFs{dir: u.Path}, nil
 	case "ssh", "sftp":
 		userinfo := u.User
@@ -80,7 +77,6 @@ func OpenFS(target string) (FS, error) {
 			return nil, errors.New("SSH 缺少用户名或密码")
 		}
 		password, _ := userinfo.Password()
-		fmt.Println(u.Host, userinfo.Username(), password, u.Path)
 
 		address, port, err := net.SplitHostPort(u.Host)
 		if err != nil {
