@@ -2,7 +2,7 @@ package shell
 
 import (
 	"bytes"
-	"cn/com/hengwei/sim/sshd"
+	"cn/com/hengwei_private/sim/sshd"
 	"context"
 	"net"
 	_ "net/http/pprof"

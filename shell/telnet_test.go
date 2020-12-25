@@ -2,8 +2,8 @@ package shell
 
 import (
 	"bytes"
-	"cn/com/hengwei/sim/sshd"
-	"cn/com/hengwei/sim/telnetd"
+	"cn/com/hengwei_private/sim/sshd"
+	"cn/com/hengwei_private/sim/telnetd"
 	"context"
 	"net"
 	"testing"

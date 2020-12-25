@@ -2,7 +2,7 @@ package harness
 
 import (
 	"bytes"
-	"cn/com/hengwei/sim/sshd"
+	"cn/com/hengwei_private/sim/sshd"
 	"context"
 	"strings"
 	"testing"

@@ -22,16 +22,32 @@ func init() {
 }
 
 func init() {
-	if util.IsWindows {
-		if fi, err := os.Stat(PlinkPath); err != nil && os.IsNotExist(err) {
-			pa := "C:\\Program Files\\hengwei\\runtime_env\\putty\\plink.exe"
+	if plinkPath := os.Getenv("hengwei_plink"); plinkPath != "" {
+		PlinkPath = plinkPath
+	}
+
+	if fi, err := os.Stat(PlinkPath); err != nil && os.IsNotExist(err) {
+		var files []string
+		if util.IsWindows {
+			files = []string{
+				"C:\\Program Files\\hengwei\\runtime_env\\putty\\plink.exe",
+				filepath.Join(binDir, "plink.exe"),
+
+				"C:\\Program Files\\hengwei\\runtime_env\\putty\\plink_old.exe",
+				filepath.Join(binDir, "plink_old.exe"),
+			}
+		} else {
+			files = []string{
+				"/usr/local/tpt/runtime_env/putty/plink",
+				filepath.Join(binDir, "plink"),
+				"/usr/local/tpt/runtime_env/putty/plink_old",
+				filepath.Join(binDir, "plink_old"),
+			}
+		}
+		for _, pa := range files {
 			if fi, err = os.Stat(pa); err == nil && !fi.IsDir() {
 				PlinkPath = pa
-			} else {
-				pa = filepath.Join(binDir, "plink.exe")
-				if fi, err = os.Stat(pa); err == nil && !fi.IsDir() {
-					PlinkPath = pa
-				}
+				break
 			}
 		}
 	}

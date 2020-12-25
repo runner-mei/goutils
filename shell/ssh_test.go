@@ -1,7 +1,7 @@
 package shell
 
 import (
-	"cn/com/hengwei/sim/sshd"
+	"cn/com/hengwei_private/sim/sshd"
 	"context"
 	"net"
 	"strings"

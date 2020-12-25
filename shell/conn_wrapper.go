@@ -351,6 +351,9 @@ func SkipHits(bs, delim []byte) bool {
 		bytes.HasSuffix(bs, []byte("last login:")) {
 		return true
 	}
+	if bytes.HasSuffix(bs, []byte("</>")) {
+		return true
+	}
 
 	if bytes.HasSuffix(bs, []byte("<myuser>")) ||
 		bytes.HasSuffix(bs, []byte("<mypassword>")) {
