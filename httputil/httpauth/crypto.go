@@ -26,6 +26,7 @@ func CreateSecurityData(values url.Values) url.Values {
 	e := values.Get("e")
 
 	content := values.Get("password")
+
 	content = createSecurityData2(m, e, "cyKzsQfFnT", content)
 	values.Set("password", content)
 	return values
@@ -41,8 +42,6 @@ func createSecurityData(m, e, random, content string) string {
 	md5 := MD5(content)
 	var envilope = md5 + "!,!" + random + "!,!" + content
 
-	fmt.Println(envilope)
-
 	data, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(envilope))
 	if err != nil {
 		panic(fmt.Errorf("m=%s,e=%s, random=%s, content=%s", m, e, random, content))
@@ -51,10 +50,25 @@ func createSecurityData(m, e, random, content string) string {
 	// return RSAUtils.encryptedString(key, envilope)
 }
 
+func createSecurityData0(m, e, content string) string {
+	// var key = RSAUtils.getKeyPair(e, '', m);
+	pub := &rsa.PublicKey{
+		N: fromBase16BigInt(m),
+		E: fromBase16Int(e),
+	}
+
+	data, err := rsa.EncryptPKCS1v15(rand.Reader, pub, []byte(content))
+	if err != nil {
+		panic(fmt.Errorf("m=%s,e=%s, content=%s", m, e, content))
+	}
+	return hex.EncodeToString(data)
+	// return RSAUtils.encryptedString(key, envilope)
+}
+
 func fromBase16BigInt(base16 string) *big.Int {
 	i, ok := new(big.Int).SetString(base16, 16)
 	if !ok {
-		panic("bad number: " + base16)
+		panic("bad number1: " + base16)
 	}
 	return i
 }
@@ -62,7 +76,8 @@ func fromBase16BigInt(base16 string) *big.Int {
 func fromBase16Int(base16 string) int {
 	i, err := strconv.ParseInt(base16, 16, 0)
 	if err != nil {
-		panic("bad number: " + base16)
+		fmt.Println(err)
+		panic("bad number2: " + base16)
 	}
 	return int(i)
 }
@@ -700,6 +715,7 @@ const rsaJS = `/*
 					this.e = $dmath.biFromHex(encryptionExponent);
 					this.d = $dmath.biFromHex(decryptionExponent);
 					this.m = $dmath.biFromHex(modulus);
+					
 					// We can do two bytes per digit, so
 					// chunkSize = 2 * (number of digits in modulus - 1).
 					// Since biHighIndex returns the high index, not the number of digits, 1 has
@@ -790,16 +806,66 @@ const rsaJS = `/*
 			    return window.RSAUtils.encryptedString(key, envilope)
 			}
 
+
+			function createSecurityData3(m, e, envilope) {
+			    var key = window.RSAUtils.getKeyPair(e, '', m);
+			    return window.RSAUtils.encryptedString(key, envilope)
+			}
+
 			1+1`
 
 func createSecurityData2(m, e, random, content string) string {
+	if m == "" {
+		panic("m is empty")
+	}
+	if e == "" {
+		panic("e is empty")
+	}
+	if content == "" {
+		panic("content is empty")
+	}
+
 	vm := goja.New()
+	vm.Set("print", func(msg goja.Value, args ...goja.Value) {
+		var a []interface{}
+		for _, arg := range args {
+			a = append(a, arg.Export())
+		}
+
+		fmt.Println(msg, a)
+	})
+
 	_, err := vm.RunString(rsaJS)
 	if err != nil {
 		panic(err)
 	}
 
 	a, err := vm.RunString(`createSecurityData('` + m + `', '` + e + `', '` + random + `', '` + MD5(content) + `', '` + content + `')`)
+	if err != nil {
+		panic(err)
+	}
+
+	s := a.Export()
+	return s.(string)
+}
+
+func createSecurityData3(m, e, content string) string {
+	vm := goja.New()
+	vm.Set("print", func(msg goja.Value, args ...goja.Value) {
+		var a []interface{}
+		for _, arg := range args {
+			a = append(a, arg.Export())
+		}
+
+		fmt.Println(msg, a)
+	})
+
+	_, err := vm.RunString(rsaJS)
+	if err != nil {
+		panic(err)
+	}
+
+	a, err := vm.RunString(`createSecurityData3('` + m + `', '` + e + `', '` + content + `')`)
 	if err != nil {
 		panic(err)
 	}
