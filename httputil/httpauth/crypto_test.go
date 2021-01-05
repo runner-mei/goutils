@@ -69,16 +69,13 @@ func TestHddlHtml(t *testing.T) {
 	}
 	if useSM {
 		t.Error("smPass = true")
-		return
 	}
 	if !useRSA {
 		t.Error("smPass = false")
-		return
 	}
 
 	exceptedKey := "00a767ca54db607dc96e5d69c60bf16f3878139ae4ecb4101912da759eaa6ee963aee8efc78a22fe413674480e1dc2168ab36f0153ac8b575e44b3f8fc0621958717ba1aef7a0b977f46a54044e71add31cb5e5534996de016c9a3600de424f6dbd6d0b9d335c26ca3083c53f21f37903cf576ca7fd1ea82f37fe0f1f4c884b3bb#010001"
 	if encryptionKeyStr != exceptedKey {
-
 		t.Error("actual  ", encryptionKeyStr)
 		t.Error("excepted", exceptedKey)
 		return
