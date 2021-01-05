@@ -5,6 +5,7 @@ import (
 	"crypto/rand"
 	"crypto/rsa"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"math/big"
 	"net/url"
@@ -21,15 +22,19 @@ func MD5(src string) string {
 	return hex.EncodeToString(cipherStr)
 }
 
-func CreateSecurityData(values url.Values) url.Values {
+func CreateSecurityData(values url.Values) (url.Values, error) {
 	m := values.Get("m")
 	e := values.Get("e")
 
 	content := values.Get("password")
 
-	content = createSecurityData2(m, e, "cyKzsQfFnT", content)
+	var err error
+	content, err = createSecurityData2(m, e, "cyKzsQfFnT", content)
+	if err != nil {
+		return nil, err
+	}
 	values.Set("password", content)
-	return values
+	return values, nil
 }
 
 func createSecurityData(m, e, random, content string) string {
@@ -814,15 +819,15 @@ const rsaJS = `/*
 
 			1+1`
 
-func createSecurityData2(m, e, random, content string) string {
+func createSecurityData2(m, e, random, content string) (string, error) {
 	if m == "" {
-		panic("m is empty")
+		return "", errors.New("m is empty")
 	}
 	if e == "" {
-		panic("e is empty")
+		return "", errors.New("e is empty")
 	}
 	if content == "" {
-		panic("content is empty")
+		return "", errors.New("content is empty")
 	}
 
 	vm := goja.New()
@@ -837,16 +842,16 @@ func createSecurityData2(m, e, random, content string) string {
 
 	_, err := vm.RunString(rsaJS)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	a, err := vm.RunString(`createSecurityData('` + m + `', '` + e + `', '` + random + `', '` + MD5(content) + `', '` + content + `')`)
 	if err != nil {
-		panic(err)
+		return "", err
 	}
 
 	s := a.Export()
-	return s.(string)
+	return s.(string), nil
 }
 
 func createSecurityData3(m, e, content string) string {

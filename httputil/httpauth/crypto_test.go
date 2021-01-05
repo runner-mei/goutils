@@ -12,8 +12,11 @@ func TestCrypto(t *testing.T) {
 	random := "cyKzsQfFnT"
 	content := "2cjnx123*"
 
-	a := createSecurityData2(m, e, random, content)
-
+	a, err := createSecurityData2(m, e, random, content)
+	if err != nil {
+		t.Error(err)
+		return
+	}
 	if a != result {
 		t.Error("actual  ", a)
 		t.Error("excepted", result)

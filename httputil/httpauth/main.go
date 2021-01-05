@@ -840,7 +840,11 @@ func ParseForm(body io.Reader) (method, posturl string, values url.Values, err e
 					hasNotHidden = true
 					continue
 				}
-				values[attributeValue(node, "name")] = []string{attributeValue(node, "value")}
+				name := attributeValue(node, "name")
+				if name == "" {
+					continue
+				}
+				values[name] = []string{attributeValue(node, "value")}
 			}
 		})
 	})
