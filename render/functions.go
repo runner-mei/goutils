@@ -641,14 +641,33 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 	switch date := date.(type) {
 	default:
 		t = time.Now()
+	case *time.Time:
+		if date.IsZero() {
+			return ""
+		}
+		t = *date
 	case time.Time:
+		if date.IsZero() {
+			return ""
+		}
 		t = date
 	case int64:
+		if date == 0 {
+			return ""
+		}
 		t = time.Unix(date, 0)
 	case int:
+		if date == 0 {
+			return ""
+		}
 		t = time.Unix(int64(date), 0)
 	case int32:
+		if date == 0 {
+			return ""
+		}
 		t = time.Unix(int64(date), 0)
+	default:
+		return ""
 	}
 
 	loc, err := time.LoadLocation(zone)
