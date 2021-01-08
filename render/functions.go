@@ -666,8 +666,6 @@ func dateInZone(fmt string, date interface{}, zone string) string {
 			return ""
 		}
 		t = time.Unix(int64(date), 0)
-	default:
-		return ""
 	}
 
 	loc, err := time.LoadLocation(zone)
