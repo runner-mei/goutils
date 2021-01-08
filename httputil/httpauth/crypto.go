@@ -7,6 +7,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"io"
 	"math/big"
 	"net/url"
 	"regexp"
@@ -43,19 +44,19 @@ func ParseEncryptionKey(responseBody []byte) (key string, useRsa, useSM bool, er
 	return
 }
 
-func CreateSecurityData(responseBody []byte, values url.Values) (url.Values, error) {
+func CreateSecurityData(responseBody []byte, values url.Values, dumpOut io.Writer) (url.Values, error) {
 	encryptionKeyStr, useRsa, _, err := ParseEncryptionKey(responseBody)
 	if err != nil {
 		return nil, err
 	}
 	if useRsa {
-		return CreateSecurityDataWithRsa(values, encryptionKeyStr)
+		return CreateSecurityDataWithRsa(values, encryptionKeyStr, dumpOut)
 	}
 
-	return CreateSecurityDataWithSM(values, encryptionKeyStr)
+	return CreateSecurityDataWithSM(values, encryptionKeyStr, dumpOut)
 }
 
-func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string) (url.Values, error) {
+func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string, dumpOut io.Writer) (url.Values, error) {
 	pwd := values.Get("password")
 
 	// function getEncryptPwd(pwd) {
@@ -118,7 +119,7 @@ func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string) (url.V
 	return values, nil
 }
 
-func CreateSecurityDataWithRsa(values url.Values, encryptionKeyStr string) (url.Values, error) {
+func CreateSecurityDataWithRsa(values url.Values, encryptionKeyStr string, dumpOut io.Writer) (url.Values, error) {
 	pwd := values.Get("password")
 
 	var keys = strings.Split(encryptionKeyStr, "#")
@@ -139,12 +140,19 @@ func CreateSecurityDataWithRsa(values url.Values, encryptionKeyStr string) (url.
 	}
 
 	//生成0-100之间的随机数
-	var random = "cyKzsQfFnT"
+	var random = "tA2BYT3a"
 
-	newPwd, err := createSecurityData3(modulus, exponent, MD5(pwd)+random+pwd)
+	envilope := MD5(pwd) + random + pwd
+
+	newPwd, err := createSecurityData3(modulus, exponent, envilope)
 	if err != nil {
 		return nil, err
 	}
+
+	if dumpOut != nil {
+		io.WriteString(dumpOut, "use rsa, m="+modulus+", e="+exponent+", pwd="+pwd+", envilope="+envilope+", newPwd="+newPwd)
+	}
+
 	values.Set("password", newPwd)
 	return values, nil
 }

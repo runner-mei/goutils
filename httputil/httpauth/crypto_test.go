@@ -2,6 +2,7 @@ package httpauth
 
 import (
 	"net/url"
+	"os"
 	"testing"
 )
 
@@ -85,13 +86,13 @@ func TestHddlHtml(t *testing.T) {
 		"password": []string{"2cjnx123*"},
 	}
 
-	values, err = CreateSecurityData([]byte(hddl_txt), values)
+	values, err = CreateSecurityData([]byte(hddl_txt), values, os.Stderr)
 	if err != nil {
 		t.Error(err)
 		return
 	}
 
-	excepted := "6728b43318f6ef03db06f4c37dfec78b13cf662ed7d82d2128dc4879ca8e467d2bfbb3aa09cf0d40289828638115f0d8d31789ffb6cecdaa9bc7c6260f806c2d6a6d8e0bd09171dd3988587e8a241f99b23a6c710aa249c2bf1d2fe09f425ea4405bf294ec7239ef1726ad29838c8a69953eb7f25695db00457855096b7503ac"
+	excepted := "278038ba5173eaaa5c40af1ecad6e22928a925f0bddb30c4d33bc7ef7ef93d569fa6235eed15ae42ad53ed7885e280df1a3167b6b25f7339122312992f056a7168cab158e7455abe4ad7394b349a3032043f0dbbab88ab1a1b29b18d707a793cfaab03576a72c3db9c488c8312c3b0e497176fead36c7fb7b5c8117e04088816"
 	result := values.Get("password")
 	if excepted != result {
 		t.Error("actual  ", result)
