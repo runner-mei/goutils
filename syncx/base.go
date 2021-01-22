@@ -1,82 +1,79 @@
 package syncx
 
 import (
+	"bytes"
 	"errors"
-	"io"
+	"fmt"
+	"log"
+	"runtime"
 	"sync"
+	"sync/atomic"
 )
 
-type Closes struct {
-	mu      sync.Mutex
-	closers []io.Closer
+type Base struct {
+	closed int32
+	S      chan struct{}
+	Wait   sync.WaitGroup
+
+	Closes
 }
 
-func (self *Closes) OnClosing(closers ...io.Closer) {
-	self.mu.Lock()
-	defer self.mu.Unlock()
-	self.closers = append(self.closers, closers...)
-}
-
-func (self *Closes) CloseWith(closeHandle func() error) error {
-	var err error
-	if nil != closeHandle {
-		err = closeHandle()
+func (base *Base) CloseWith(closeHandle func() error) error {
+	if !atomic.CompareAndSwapInt32(&base.closed, 0, 1) {
+		return nil
 	}
-
-	func() {
-		self.mu.Lock()
-		defer self.mu.Unlock()
-		for _, closer := range self.closers {
-			if e := closer.Close(); e != nil {
-				if err == nil {
-					err = e
-				}
-			}
+	err := base.Closes.CloseWith(func() error {
+		if nil != base.S {
+			close(base.S)
 		}
-	}()
+
+		if nil != closeHandle {
+			return closeHandle()
+		}
+		return nil
+	})
+	base.Wait.Wait()
 	return err
 }
 
-// type CloseW struct {
-// 	C interface {
-// 		Close()
-// 	}
-// }
-
-// func (cw *CloseW) Close() error {
-// 	if cw.C != nil {
-// 		cw.C.Close()
-// 	}
-// 	return nil
-// }
-
-func ToCloser(c interface{}) io.Closer {
-	if cw, ok := c.(interface {
-		Close()
-	}); ok {
-		return CloseFunc(func() error {
-			if cw != nil {
-				cw.Close()
-			}
-			return nil
-		})
-	}
-
-	if cf, ok := c.(func() error); ok {
-		return CloseFunc(cf)
-	}
-
-	if closer, ok := c.(io.Closer); ok {
-		return closer
-	}
-	panic(errors.New("it isn't a closer"))
+func (base *Base) IsClosed() bool {
+	return 0 != atomic.LoadInt32(&base.closed)
 }
 
-type CloseFunc func() error
+func (base *Base) CatchThrow(message string, err *error) {
+	if o := recover(); nil != o {
+		var buffer bytes.Buffer
+		if "" == message {
+			buffer.WriteString(fmt.Sprintf("[panic] %v", o))
+		} else {
+			buffer.WriteString(fmt.Sprintf("[panic] %v - %v", message, o))
+		}
 
-func (f CloseFunc) Close() error {
-	if f == nil {
-		return nil
+		for i := 1; ; i++ {
+			pc, file, line, ok := runtime.Caller(i)
+			if !ok {
+				break
+			}
+			funcinfo := runtime.FuncForPC(pc)
+			if nil != funcinfo {
+				buffer.WriteString(fmt.Sprintf("    %s:%d %s\r\n", file, line, funcinfo.Name()))
+			} else {
+				buffer.WriteString(fmt.Sprintf("    %s:%d\r\n", file, line))
+			}
+		}
+
+		errMsg := buffer.String()
+		log.Println(errMsg)
+		if nil != err {
+			*err = errors.New(errMsg)
+		}
 	}
-	return f()
+}
+
+func (base *Base) RunItInGoroutine(cb func()) {
+	base.Wait.Add(1)
+	go func() {
+		cb()
+		base.Wait.Done()
+	}()
 }
