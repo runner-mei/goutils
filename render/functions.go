@@ -183,6 +183,7 @@ import (
 	ttemplate "text/template"
 	"time"
 
+	"github.com/runner-mei/check"
 	"github.com/runner-mei/goutils/render/util"
 )
 
@@ -360,6 +361,8 @@ var genericMap = map[string]interface{}{
 	// Wrap Atoi to stop errors.
 	"atoi":       func(a string) int { i, _ := strconv.Atoi(a); return i },
 	"int64":      toInt64,
+	"toFloat":    toFloat,
+	"isNaN":      isNaN,
 	"toMapArray": toMapArray,
 	"stringify":  stringify,
 
@@ -492,6 +495,11 @@ var genericMap = map[string]interface{}{
 
 	"isNil":    isNil,
 	"isNotNil": isNotNil,
+	"my_lt":    cmpLt,
+	"my_lte":   cmpLte,
+	"my_eq":    cmpEq,
+	"my_gt":    cmpGt,
+	"my_gte":   cmpGte,
 }
 
 func joinWith(sb *strings.Builder, sep string, values []interface{}) {
@@ -1247,4 +1255,125 @@ func readNext(nextKey string) (string, string) {
 
 func appendToSlice(a []interface{}, b interface{}) []interface{} {
 	return append(a, b)
+}
+
+func isNaN(value interface{}) bool {
+	f64, ok := value.(float64)
+	if ok {
+		return math.IsNaN(f64)
+	}
+
+	// f32, ok := value.(float32)
+	// if ok {
+	// 	return math.IsNaN(f32)
+	// }
+	return false
+}
+
+func toFloat(value interface{}) float64 {
+	if nil == value {
+		return math.NaN()
+	}
+	switch v := value.(type) {
+	case []byte:
+		v = bytes.Trim(v, "\"")
+		i64, err := strconv.ParseInt(string(v), 10, 64)
+		if nil == err {
+			return float64(i64)
+		}
+
+		u64, err := strconv.ParseUint(string(v), 10, 64)
+		if nil == err {
+			return float64(u64)
+		}
+		return math.NaN()
+	case string:
+		v = strings.Trim(v, "\"")
+		i64, err := strconv.ParseInt(v, 10, 64)
+		if nil == err {
+			return float64(i64)
+		}
+		u64, err := strconv.ParseUint(v, 10, 64)
+		if nil == err {
+			return float64(u64)
+		}
+		return math.NaN()
+	case json.Number:
+		i64, err := strconv.ParseInt(v.String(), 10, 64)
+		if nil == err {
+			return float64(i64)
+		}
+		u64, err := strconv.ParseUint(v.String(), 10, 64)
+		if nil == err {
+			return float64(u64)
+		}
+		return math.NaN()
+	case *json.Number:
+		i64, err := strconv.ParseInt(v.String(), 10, 64)
+		if nil == err {
+			return float64(i64)
+		}
+		u64, err := strconv.ParseUint(v.String(), 10, 64)
+		if nil == err {
+			return float64(u64)
+		}
+		return math.NaN()
+	case uint:
+		return float64(v)
+	case uint8:
+		return float64(v)
+	case uint16:
+		return float64(v)
+	case uint32:
+		return float64(v)
+	case uint64:
+		return float64(v)
+	case int:
+		return float64(v)
+	case int8:
+		return float64(v)
+	case int16:
+		return float64(v)
+	case int32:
+		return float64(v)
+	case int64:
+		return float64(v)
+	case float32:
+		return float64(v)
+	case float64:
+		return v
+	}
+	return math.NaN()
+}
+
+func cmpLt(a, b interface{}) bool {
+	a64 := toFloat(a)
+	b64 := toFloat(b)
+	return a64 < b64
+}
+func cmpLte(a, b interface{}) bool {
+	a64 := toFloat(a)
+	b64 := toFloat(b)
+	return a64 <= b64
+}
+func cmpEq(a, b interface{}) bool {
+	cc, err := check.DynamicEquals(a)
+	if err != nil {
+		return false
+	}
+	ok, err := cc(b)
+	if err != nil {
+		return false
+	}
+	return ok
+}
+func cmpGt(a, b interface{}) bool {
+	a64 := toFloat(a)
+	b64 := toFloat(b)
+	return a64 > b64
+}
+func cmpGte(a, b interface{}) bool {
+	a64 := toFloat(a)
+	b64 := toFloat(b)
+	return a64 >= b64
 }
