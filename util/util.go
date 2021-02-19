@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/mitchellh/mapstructure"
+	"github.com/runner-mei/goutils/ioext"
 	"github.com/runner-mei/goutils/syncx"
 )
 
@@ -60,14 +61,7 @@ func TryClose(v interface{}) {
 
 // CloseWith 捕获错误并打印
 func CloseWith(closer io.Closer) {
-	if err := closer.Close(); err != nil {
-		if err == sql.ErrTxDone {
-			return
-		}
-
-		log.Println("[WARN]", err)
-		panic(err)
-	}
+	ioext.CloseWith(closer)
 }
 
 // RollbackWith 捕获错误并打印
@@ -180,4 +174,3 @@ func CopyFrom(froms ...map[string]interface{}) map[string]interface{} {
 	}
 	return res
 }
-
