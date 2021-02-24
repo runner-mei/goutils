@@ -49,8 +49,15 @@ func ToCloser(c interface{}) io.Closer {
 		})
 	}
 
-	if cf, ok := c.(func() error); ok {
-		return CloseFunc(cf)
+	if cb, ok := c.(func()); ok {
+		return CloseFunc(func() error {
+			cb()
+			return nil
+		})
+	}
+
+	if cb, ok := c.(func() error); ok {
+		return CloseFunc(cb)
 	}
 
 	if closer, ok := c.(io.Closer); ok {
