@@ -27,6 +27,7 @@ type Shell struct {
 	SSHParams    *SSHParam
 	TelnetParams *TelnetParam
 	SerialParams *SerialParam
+	Variables    map[string]string
 
 	IsSSHConn   bool
 	Conn        shell.Conn

@@ -157,6 +157,30 @@ var Placeholders = []struct {
 	},
 }
 
+func RegisterPlaceholder(name string) {
+	tagName := "<<" + name + ">>"
+
+	Placeholders = append(Placeholders, struct {
+		Placeholder []byte
+		Replace     func(*Shell, []byte) ([]byte, error)
+	}{
+		Placeholder: []byte(tagName),
+		Replace: func(conn *Shell, sendbuf []byte) ([]byte, error) {
+			if len(conn.Variables) == 0 {
+				return sendbuf, nil
+			}
+
+			value, ok := conn.Variables[name]
+			if !ok {
+				return nil, errors.New("参数 '" + name + "' 不存在")
+			}
+			return bytes.Replace(sendbuf,
+				[]byte(tagName),
+				[]byte(value), -1), nil
+		},
+	})
+}
+
 var SubParsers = map[string]func(*Script, int, int, string, []byte, *Script) error{
 	"@trigger": func(script *Script, start, end int, rawText string, fields []byte, subScript *Script) error {
 		if len(fields) == 0 {
