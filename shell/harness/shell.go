@@ -32,6 +32,7 @@ type Shell struct {
 	IsSSHConn   bool
 	Conn        shell.Conn
 	Prompt      []byte
+	promptStack [][]byte
 	FailStrings [][]byte
 
 	userCRLF  bool
@@ -83,6 +84,19 @@ func (s *Shell) OnFail(question string) {
 	s.questions = append(s.questions, shell.Match(question, func(conn shell.Conn, bs []byte, idx int) (bool, error) {
 		return false, errors.New("收到错误消息: " + question)
 	}))
+}
+
+func (s *Shell) pushPrompt() {
+	s.promptStack = append(s.promptStack, s.Prompt)
+}
+
+func (s *Shell) popPrompt() error {
+	if len(s.promptStack) == 0 {
+		return errors.New("current isnot view mode")
+	}
+	s.Prompt = s.promptStack[len(s.promptStack)-1]
+	s.promptStack = s.promptStack[:len(s.promptStack)-1]
+	return nil
 }
 
 func (s *Shell) SetPrompt(prompt []byte) {
@@ -281,6 +295,24 @@ func (s *Shell) ReadPrompt(ctx context.Context, expected [][]byte) error {
 	return nil
 }
 
+func (s *Shell) WithView(ctx context.Context, cmd []byte, newPrompts [][]byte) error {
+	newPrompt, err := shell.WithView(ctx, s.Conn, cmd, newPrompts)
+	if err != nil {
+		return err
+	}
+
+	s.pushPrompt()
+	s.SetPrompt(newPrompt)
+	return nil
+}
+
+func (s *Shell) ExitView(ctx context.Context, cmd []byte) error {
+	if err := s.popPrompt(); err != nil {
+		return err
+	}
+	return s.exec(ctx, cmd)
+}
+
 func (s *Shell) Write(ctx context.Context, bs []byte) error {
 	if s.Conn == nil {
 		return errors.New("无连接")
@@ -302,6 +334,10 @@ func (s *Shell) RunScript(ctx context.Context, subScript *Script) ([]ExecuteResu
 }
 
 func (s *Shell) Exec(ctx context.Context, command string) error {
+	return s.exec(ctx, []byte(command))
+}
+
+func (s *Shell) exec(ctx context.Context, command []byte) error {
 	if s.Conn == nil {
 		return errors.New("无连接")
 	}
@@ -314,7 +350,7 @@ func (s *Shell) Exec(ctx context.Context, command string) error {
 		return errors.Wrap(err, "执行命令之前清空缓存失败")
 	}
 
-	err = s.Conn.Sendln([]byte(command))
+	err = s.Conn.Sendln(command)
 	if err != nil {
 		return errors.Wrap(err, "发送命令失败")
 	}

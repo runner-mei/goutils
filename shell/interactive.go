@@ -532,3 +532,26 @@ func WithEnable(ctx context.Context, conn Conn, enableCmd []byte, passwordPrompt
 	}
 	return ReadPrompt(ctx, conn, enablePrompts)
 }
+
+func WithView(ctx context.Context, conn Conn, cmd []byte, newPrompts [][]byte) ([]byte, error) {
+	if e := conn.Sendln(cmd); nil != e {
+		return nil, errors.Wrap(e, "send '"+string(cmd)+"' failed")
+	}
+
+	var output []byte
+	err := Expect(ctx, conn,
+		Match(newPrompts, func(c Conn, bs []byte, nidx int) (bool, error) {
+			output = bs
+			return false, nil
+		}),
+	)
+	if err != nil {
+		return nil, err
+	}
+
+	prompt := GetPrompt(output, newPrompts)
+	if len(prompt) == 0 {
+		return nil, errors.New("read prompt '" + string(bytes.Join(newPrompts, []byte(","))) + "' failed: \r\n" + ToHexStringIfNeed(output))
+	}
+	return prompt, nil
+}
