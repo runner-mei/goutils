@@ -1,6 +1,7 @@
 package util
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -97,4 +98,22 @@ func CleanImport(imp string) (string, error) {
 
 	// Extract package's import from it.
 	return AbsoluteToImport(abs)
+}
+
+func GetModulePath() (string, error) {
+	wd, err := os.Getwd()
+	if err != nil {
+		panic(err)
+	}
+	for {
+		gomod := filepath.Join(wd, "go.mod")
+		if FileExists(gomod) {
+			return wd, nil
+		}
+		parent := filepath.Dir(wd)
+		if len(parent) >= len(wd) {
+			return "", errors.New("没有找到 go.mod")
+		}
+		wd = parent
+	}
 }
