@@ -49,12 +49,13 @@ var (
 		[]byte("Login invalid"),
 		[]byte("Access denied"),
 		[]byte("Login failed"),
-		[]byte("Error:")}
+		[]byte("Error:"),
+		[]byte("found at '^' position"),
+	}
 	defaultPermissionPrompts = [][]byte{
 		[]byte("Invalid input detected at '^' marker"),
 		[]byte("Error: Too many parameters found at '^' position."),
-		[]byte("Error: AAA authorization failed"),
-		[]byte("Error:AAA authorization failed"),
+		[]byte("AAA authorization failed"),
 		[]byte("Command authorization failed."),
 		[]byte("Unrecognized command found"),
 	}
