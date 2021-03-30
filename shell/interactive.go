@@ -56,6 +56,7 @@ var (
 		[]byte("Error: AAA authorization failed"),
 		[]byte("Error:AAA authorization failed"),
 		[]byte("Command authorization failed."),
+		[]byte("Unrecognized command found"),
 	}
 )
 
