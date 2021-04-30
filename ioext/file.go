@@ -18,6 +18,12 @@ var ErrStopped = errors.ErrStopped
 
 // CloseWith 捕获错误并打印
 func CloseWith(closer io.Closer) {
+	if closer == nil {
+		return
+	}
+	if f, ok := closer.(*os.File); ok && f == nil {
+		return
+	}
 	if err := closer.Close(); err != nil {
 		if err == sql.ErrTxDone {
 			return
