@@ -43,7 +43,7 @@ func main() {
 					continue
 				}
 				if messages[foundIdx].MsgStr == "" {
-					messages[foundIdx].MsgStr = msg.MsgId
+					messages[foundIdx].MsgStr = msg.MsgStr
 				}
 			}
 		}
