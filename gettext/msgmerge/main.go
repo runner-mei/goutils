@@ -27,9 +27,6 @@ func main() {
 			mimeHeader = file.MimeHeader
 		}
 
-		if len(messages) == 0 {
-			messages = file.Messages
-		} else {
 			for _, msg := range file.Messages {
 				foundIdx := -1
 				for idx, old := range messages {
@@ -46,7 +43,6 @@ func main() {
 					messages[foundIdx].MsgStr = msg.MsgStr
 				}
 			}
-		}
 	}
 
 	file := po.File{
