@@ -31,7 +31,7 @@ type Writer interface {
 	io.Closer
 	Add(relPath, destPath string) error
 	AddFile(relPath, destPath string) error
-	AddDir(relPath, destPath string) error
+	AddDir(relPath, destPath string, skip func(fi os.FileInfo) bool) error
 	AddPattern(relPath, destPath, pat string, isRel bool) error
 }
 
@@ -79,7 +79,7 @@ func (w *baseWriter) AddPattern(relPath, destPath, pat string, isRel bool) error
 	return nil
 }
 
-func (w *baseWriter) AddDir(relPath, destPath string) error {
+func (w *baseWriter) AddDir(relPath, destPath string, skip func(fi os.FileInfo) bool) error {
 	fr, err := os.Open(destPath)
 	if err != nil {
 		return err
@@ -90,7 +90,7 @@ func (w *baseWriter) AddDir(relPath, destPath string) error {
 	// 	return errors.New("'" + destPath + "' isnot directory")
 	// }
 
-	return w.addDir(relPath, destPath, fr)
+	return w.addDir(relPath, destPath, fr, skip)
 }
 
 func (w *baseWriter) add(relPath, destPath string, fi os.FileInfo) error {
@@ -110,12 +110,12 @@ func (w *baseWriter) add(relPath, destPath string, fi os.FileInfo) error {
 
 	pa := filepath.ToSlash(filepath.Join(relPath, fi.Name()))
 	if fi.IsDir() {
-		return w.addDir(pa, destPath, fr)
+		return w.addDir(pa, destPath, fr, nil)
 	}
 	return w.addFile(pa, fr, fi)
 }
 
-func (w *baseWriter) addDir(relPath, destPath string, dir *os.File) error {
+func (w *baseWriter) addDir(relPath, destPath string, dir *os.File, skip func(fi os.FileInfo) bool) error {
 	log.Println("add directory -", destPath)
 
 	// Get file info slice
@@ -125,6 +125,9 @@ func (w *baseWriter) addDir(relPath, destPath string, dir *os.File) error {
 	}
 
 	for _, fi := range fiList {
+		if skip != nil && skip(fi) {
+			continue
+		}
 		err = w.add(relPath, filepath.Join(destPath, fi.Name()), fi)
 		if err != nil {
 			return err
