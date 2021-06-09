@@ -8,6 +8,10 @@ func Gettext(s string) string {
 	return ngettext.Gettext(s)
 }
 
+func PGettext(msgctx, msgid string) string {
+	return ngettext.PGettext(msgctx, msgid)
+}
+
 func DGettext(domain, s string) string {
 	return ngettext.DGettext(domain, s)
 }
