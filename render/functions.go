@@ -312,6 +312,9 @@ var genericMap = map[string]interface{}{
 	"dateInZone":     dateInZone,
 	"dateModify":     dateModify,
 	"dateAdd":        dateAdd,
+	"datetimeInZone":        datetimeInZone,
+	"datetime":        datetime,
+
 
 	// Strings
 	"abbrev":     abbrev,
@@ -642,6 +645,14 @@ func htmlDate(date interface{}) string {
 
 func htmlDateInZone(date interface{}, zone string) string {
 	return dateInZone("2006-01-02", date, zone)
+}
+
+func datetimeInZone(date interface{}, zone string) string {
+	return dateInZone("2006-01-02 15:04:05", date, zone)
+}
+
+func datetime(date interface{}) string {
+	return dateInZone("2006-01-02 15:04:05", date, "Local")
 }
 
 func dateInZone(fmt string, date interface{}, zone string) string {
