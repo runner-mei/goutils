@@ -371,6 +371,21 @@ var TemplateFuncs = template.FuncMap{
 		u.RawQuery = query.Encode()
 		return u.String()
 	},
+	"default": func(values ...interface{}) interface{} {
+		for _, value := range values[:len(values)-1] {
+			if value == nil {
+				continue
+			}
+
+			if b, ok := value.(bool); ok {
+				return b
+			}
+			if !util.IsZeroValue(value) {
+				return value
+			}
+		}
+		return values[len(values)-1]
+	},
 }
 
 func EmbededJSFile(read func(interface{}, string) ([]byte, error)) func(ctx interface{}, filename string) htmltemplate.JS {

@@ -165,6 +165,11 @@ func IsZero(v reflect.Value) bool {
 	return false
 }
 
+func IsZeroValue(value interface{}) bool {
+	v := reflect.ValueOf(value)
+	return IsZero(v)
+}
+
 func CopyFrom(froms ...map[string]interface{}) map[string]interface{} {
 	res := map[string]interface{}{}
 	for _, from := range froms {
