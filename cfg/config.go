@@ -87,6 +87,12 @@ func (self *Config) DurationWithDefault(key string, defValue time.Duration) time
 	return defValue
 }
 
+// Has 是否有指定的配置
+func (self *Config) Has(key string) bool {
+	_, ok := self.settings[key]
+	return ok
+}
+
 // Set 写配置
 func (self *Config) Set(key string, value interface{}) {
 	self.settings[key] = value
