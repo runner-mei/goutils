@@ -82,6 +82,8 @@ func TestHddlHtml(t *testing.T) {
 		return
 	}
 
+	// "ab222585dbce65a736de2db2a56133bf tA2BYT3a 2cjnx123*"
+
 	var values = url.Values{
 		"password": []string{"2cjnx123*"},
 	}
@@ -95,6 +97,49 @@ func TestHddlHtml(t *testing.T) {
 	excepted := "278038ba5173eaaa5c40af1ecad6e22928a925f0bddb30c4d33bc7ef7ef93d569fa6235eed15ae42ad53ed7885e280df1a3167b6b25f7339122312992f056a7168cab158e7455abe4ad7394b349a3032043f0dbbab88ab1a1b29b18d707a793cfaab03576a72c3db9c488c8312c3b0e497176fead36c7fb7b5c8117e04088816"
 	result := values.Get("password")
 	if excepted != result {
+		t.Error("actual  ", result)
+		t.Error("excepted", excepted)
+	}
+}
+
+
+
+func TestXldwHtml(t *testing.T) {
+
+	encryptionKeyStr, useRSA, useSM, err := ParseEncryptionKey([]byte(xldwLoginHtml))
+	if err != nil {
+		t.Error(err)
+		return
+	}
+	if useSM {
+		t.Error("smPass = true")
+	}
+	if !useRSA {
+		t.Error("smPass = false")
+	}
+
+	exceptedKey := "00a767ca54db607dc96e5d69c60bf16f3878139ae4ecb4101912da759eaa6ee963aee8efc78a22fe413674480e1dc2168ab36f0153ac8b575e44b3f8fc0621958717ba1aef7a0b977f46a54044e71add31cb5e5534996de016c9a3600de424f6dbd6d0b9d335c26ca3083c53f21f37903cf576ca7fd1ea82f37fe0f1f4c884b3bb#010001"
+	if encryptionKeyStr != exceptedKey {
+		t.Error("actual  ", encryptionKeyStr)
+		t.Error("excepted", exceptedKey)
+		return
+	}
+
+	// "ab222585dbce65a736de2db2a56133bf tA2BYT3a 2cjnx123*"
+
+	var values = url.Values{
+		"password": []string{"2cjnx123*"},
+	}
+
+	values, err = CreateSecurityData([]byte(xldwLoginHtml), values, os.Stderr)
+	if err != nil {
+		t.Error(err)
+		return
+	}
+
+	excepted := "278038ba5173eaaa5c40af1ecad6e22928a925f0bddb30c4d33bc7ef7ef93d569fa6235eed15ae42ad53ed7885e280df1a3167b6b25f7339122312992f056a7168cab158e7455abe4ad7394b349a3032043f0dbbab88ab1a1b29b18d707a793cfaab03576a72c3db9c488c8312c3b0e497176fead36c7fb7b5c8117e04088816"
+	result := values.Get("password")
+	if excepted == result {
 		t.Error("actual  ", result)
 		t.Error("excepted", excepted)
 	}

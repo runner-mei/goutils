@@ -99,6 +99,33 @@ func (params *LoginParams) BaseURL() string {
 	return protocol + "://" + address
 }
 
+func WithClientTrace(ctx context.Context, dumpOut io.Writer) context.Context {
+	if dumpOut == nil {
+		return ctx
+	}
+
+	var trace *httptrace.ClientTrace
+	if ctx != nil {
+		trace = httptrace.ContextClientTrace(ctx)
+		if trace != nil {
+			return ctx
+		}
+	}
+
+	trace = &httptrace.ClientTrace{
+		GotConn: func(connInfo httptrace.GotConnInfo) {
+			fmt.Fprintf(dumpOut, "Got Conn: %+v\r\n", connInfo)
+		},
+		WroteHeaderField: func(key string, value []string) {
+			fmt.Fprintf(dumpOut, "WroteHeaderField: %s:%v\r\n", key, value)
+		},
+	}
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	return httptrace.WithClientTrace(ctx, trace)
+}
+
 func NewTransport(insecureSkipVerify bool, minTlsVersion, maxTlsVersion string) (*http.Transport, bool) {
 	min := parseTlsVersion(minTlsVersion)
 	max := parseTlsVersion(maxTlsVersion)
@@ -177,7 +204,7 @@ func parseTlsVersion(s string) uint16 {
 	}
 }
 
-func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (url.Values, []string, error) {
+func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, string, string, url.Values, []string, error) {
 	baseurl := params.BaseURL()
 
 	action := http.MethodGet
@@ -205,7 +232,7 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 
 		welcomeReq, err := http.NewRequest(action, welcomeURL, nil)
 		if err != nil {
-			return nil, []string{"创建登录首页请求失败", err.Error()}, err
+			return nil, "", "", nil, []string{"创建登录首页请求失败", err.Error()}, err
 		}
 		for key, value := range params.Headers {
 			welcomeReq.Header.Set(key, value)
@@ -230,7 +257,7 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 
 		welcomeResp, err := client.Do(welcomeReq)
 		if nil != err {
-			return nil, []string{"创建登录首页请求失败", err.Error()}, err
+			return nil, "","", nil, []string{"创建登录首页请求失败", err.Error()}, err
 		}
 
 		client.CheckRedirect = nil
@@ -239,13 +266,13 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 
 		welcomeResp, err = rutil.WrapUncompress(welcomeResp, false)
 		if nil != err {
-			return nil, []string{"判断登录首页响应是否要解压失败", err.Error()}, err
+			return nil,"", "", nil, []string{"判断登录首页响应是否要解压失败", err.Error()}, err
 		}
 
 		body, err := ioutil.ReadAll(welcomeResp.Body)
 		welcomeResp.Body.Close()
 		if err != nil {
-			return nil, append(logMessages, "读登录首页内容失败", err.Error()), err
+			return nil, "","", nil, append(logMessages, "读登录首页内容失败", err.Error()), err
 		}
 
 		httputil.Dump(dumpOut,
@@ -253,46 +280,61 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 			"\r\n========= 1 DumpResponse =========\r\n", welcomeResp, bytes.NewReader(body))
 
 		if http.StatusOK != welcomeResp.StatusCode {
-			return nil, append(logMessages, "登录首页的响应码不正确"),
+			return nil, "","", nil, append(logMessages, "登录首页的响应码不正确"),
 				errors.New("status code is '" + welcomeResp.Status + "' - " + string(body))
 		}
 
 		if !params.ReadForm {
-			return nil, append(logMessages, "跳过登录首页的解析"), nil
+			return nil, "","", nil, append(logMessages, "跳过登录首页的解析"), nil
 		}
 
 		doc, err := goquery.NewDocumentFromReader(bytes.NewReader(body))
 		if nil != err {
-			return nil, append(logMessages, "解析登录首页失败", err.Error()), errors.New("failed to parse login page, " + err.Error())
+			return nil, "","", nil, append(logMessages, "解析登录首页失败", err.Error()), errors.New("failed to parse login page, " + err.Error())
 		}
 
 		if params.FormLocation == "" {
 			params.FormLocation = "form"
 		}
 
+		var method string
+		var submitURL string
 		values := url.Values{}
 		formCount := 0
 		doc.Find(params.FormLocation).Each(func(idx int, form *goquery.Selection) {
 			if nodes := form.Nodes; len(nodes) > 0 {
 				action = strings.ToUpper(attributeValueWithDefaultValue(nodes[0], "method", "POST"))
+				method = action
+				submitURL = attributeValueWithDefaultValue(nodes[0], "action", "")
 			}
 
 			formCount++
 			form.Find("input[type=\"hidden\"]").Each(func(idx int, input *goquery.Selection) {
 				for _, node := range input.Nodes {
-					values[attributeValue(node, "name")] = []string{attributeValue(node, "value")}
+					formName := attributeValue(node, "name")
+					if formName == "" {
+						continue
+					}
+					values[formName] = []string{attributeValue(node, "value")}
 				}
 			})
 		})
 		if formCount == 1 {
-			return values, append(logMessages, "解析登录首页时找到"+strconv.Itoa(len(values))+"个表单项"), nil
+			welcomeResp.Body = ioutil.NopCloser(bytes.NewReader(body))
+
+			urlLow := strings.ToLower(submitURL)
+			if !strings.HasPrefix(urlLow, "https://") && !strings.HasPrefix(urlLow, "http://") {
+					submitURL = urlutil.Join(welcomeResp.Request.URL.Scheme +"://" + welcomeResp.Request.URL.Host, submitURL)
+			}
+
+			return welcomeResp, method, submitURL, values, append(logMessages, "解析登录首页时找到"+strconv.Itoa(len(values))+"个表单项"), nil
 		}
 
 		if formCount > 1 {
 			if err == nil {
-				return nil, append(logMessages, "解析登录首页时找到多个表单"), errors.New("'" + params.FormLocation + "' is muti choice")
+				return nil, "","", nil, append(logMessages, "解析登录首页时找到多个表单"), errors.New("'" + params.FormLocation + "' is muti choice")
 			}
-			return nil, append(logMessages, "解析登录首页时找到多个表单", err.Error()), err
+			return nil,"", "", nil, append(logMessages, "解析登录首页时找到多个表单", err.Error()), err
 		}
 
 		redirectURL := ParseJsRedirect(body, []string{
@@ -302,9 +344,9 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 		})
 		if redirectURL == "" {
 			if err == nil {
-				return nil, append(logMessages, "解析登录首页时没有找到表单"), errors.New("'" + params.FormLocation + "' isn't found")
+				return nil,"","",  nil, append(logMessages, "解析登录首页时没有找到表单"), errors.New("'" + params.FormLocation + "' isn't found")
 			}
-			return nil, append(logMessages, "解析登录首页时没有找到表单", err.Error()), err
+			return nil, "", "", nil, append(logMessages, "解析登录首页时没有找到表单", err.Error()), err
 		}
 
 		logMessages = append(logMessages, "解析内容时发现有重定向，开始重定向")
@@ -313,7 +355,7 @@ func readWelcome(ctx context.Context, client *http.Client, params *LoginParams, 
 		action = http.MethodGet
 	}
 
-	return nil, logMessages, errors.New("重定向次数太多了")
+	return nil,"", "", nil, logMessages, errors.New("重定向次数太多了")
 }
 
 func Logout(ctx context.Context, client *http.Client, params *LoginParams, dumpOut io.Writer) (*http.Response, []string, error) {
@@ -335,6 +377,8 @@ func Logout(ctx context.Context, client *http.Client, params *LoginParams, dumpO
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	ctx = WithClientTrace(ctx, dumpOut)
+
 	if params.Timeout > 0 {
 		var c func()
 		ctx, c = context.WithTimeout(ctx, params.Timeout)
@@ -440,6 +484,8 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	ctx = WithClientTrace(ctx, dumpOut)
+
 	if params.Timeout > 0 {
 		var c func()
 		ctx, c = context.WithTimeout(ctx, params.Timeout)
@@ -449,14 +495,35 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 	values := url.Values{}
 	var logMessages []string
 	var err error
+	var hasLoginForm bool
+	var cryptoPasswordByWebjs bool
+	var loginMethod string
+	var welcomeResp *http.Response
+	var welcomeRespBytes []byte
 
 	if params.WelcomeURL != "" {
-		values, logMessages, err = readWelcome(ctx, client, params, dumpOut)
+		var loginPostUrl string
+
+		welcomeResp, loginMethod, loginPostUrl, values, logMessages, err = readWelcome(ctx, client, params, dumpOut)
 		if err != nil {
 			return nil, logMessages, err
 		}
 		if values == nil {
 			values = url.Values{}
+		}
+		welcomeRespBytes, _ = ioutil.ReadAll(welcomeResp.Body)
+		if bytes.Contains(welcomeRespBytes, []byte("encryptionKey")) {
+			cryptoPasswordByWebjs = true
+		}
+		hasLoginForm = true
+
+		if loginPostUrl != "" && strings.ToLower(params.LoginURL) == "<auto>"{
+			loginPostUrlLow := strings.ToLower(loginPostUrl)
+			if strings.HasPrefix(loginPostUrlLow, "https://") || strings.HasPrefix(loginPostUrlLow, "http://") {
+				params.LoginURL = loginPostUrl
+			} else {
+				params.LoginURL = urlutil.Join(baseurl, loginPostUrl)
+			}
 		}
 	}
 
@@ -468,18 +535,39 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 	if params.PasswordArgname != "" {
 		passwordform = params.PasswordArgname
 	}
+
+
 	values[usernameform] = []string{params.Username}
-	values[passwordform] = []string{params.Password}
 
 	if params.PasswordCrypto == "base64" {
 		values[passwordform] = []string{base64.StdEncoding.EncodeToString([]byte(params.Password))}
+	} else if cryptoPasswordByWebjs {
+		logMessages = append(logMessages, "需要加密密码")
+		password, err := CryptoPassword(welcomeRespBytes, params.Password, dumpOut)
+		if err != nil {
+			if dumpOut != nil {
+				io.WriteString(dumpOut, "\r\n 加密密码失败 ")
+				io.WriteString(dumpOut, err.Error())
+			}
+			logMessages = append(logMessages, "加密密码失败")
+			return nil, logMessages, err
+		}
+		values[passwordform] = []string{password}
+	} else {
+		values[passwordform] = []string{params.Password}
 	}
+
 
 	for k, v := range params.Values {
 		values[k] = []string{v}
 	}
 
 	var action = "POST"
+	if hasLoginForm {
+		if loginMethod != "" {
+			action = loginMethod
+		}
+	}
 	if params.LoginMethod != "" {
 		action = params.LoginMethod
 	}
@@ -490,6 +578,8 @@ func Login(ctx context.Context, client *http.Client, params *LoginParams, dumpOu
 	} else {
 		loginURL = urlutil.Join(baseurl, params.LoginURL)
 	}
+
+	fmt.Println("===", loginURL)
 
 	return PostLogin(ctx, client, params, action, loginURL, params.ContentType, values, logMessages, 0, dumpOut)
 }
@@ -502,6 +592,8 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 	// }
 	// defer loginResp.Body.Close()
 
+	ctx = WithClientTrace(ctx, dumpOut)
+	
 	if loginMethod == "" {
 		loginMethod = "POST"
 	}
@@ -556,21 +648,6 @@ func PostLogin(ctx context.Context, client *http.Client, params *LoginParams, lo
 
 	for k, v := range params.Headers {
 		loginReq.Header.Set(k, v)
-	}
-	if dumpOut != nil {
-		trace := &httptrace.ClientTrace{
-			GotConn: func(connInfo httptrace.GotConnInfo) {
-				fmt.Fprintf(dumpOut, "Got Conn: %+v\r\n", connInfo)
-			},
-			WroteHeaderField: func(key string, value []string) {
-				fmt.Fprintf(dumpOut, "WroteHeaderField: %s:%v\r\n", key, value)
-			},
-		}
-		if ctx == nil {
-			ctx = context.Background()
-		}
-		loginReq = loginReq.WithContext(httptrace.WithClientTrace(ctx, trace))
-
 	}
 
 	loginResp, err := client.Do(loginReq)

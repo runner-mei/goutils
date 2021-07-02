@@ -45,19 +45,30 @@ func ParseEncryptionKey(responseBody []byte) (key string, useRsa, useSM bool, er
 }
 
 func CreateSecurityData(responseBody []byte, values url.Values, dumpOut io.Writer) (url.Values, error) {
-	encryptionKeyStr, useRsa, _, err := ParseEncryptionKey(responseBody)
+	pwd := values.Get("password")
+
+	newPwd, err := CryptoPassword(responseBody, pwd, dumpOut)
 	if err != nil {
 		return nil, err
 	}
-	if useRsa {
-		return CreateSecurityDataWithRsa(values, encryptionKeyStr, dumpOut)
-	}
 
-	return CreateSecurityDataWithSM(values, encryptionKeyStr, dumpOut)
+	values.Set("password", newPwd)
+	return values, nil
 }
 
-func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string, dumpOut io.Writer) (url.Values, error) {
-	pwd := values.Get("password")
+func CryptoPassword(responseBody []byte, password string, dumpOut io.Writer) (string, error) {
+	encryptionKeyStr, useRsa, _, err := ParseEncryptionKey(responseBody)
+	if err != nil {
+		return "", err
+	}
+	if useRsa {
+		return CreateSecurityDataWithRsa(password, encryptionKeyStr, dumpOut)
+	} 
+  return CreateSecurityDataWithSM(password, encryptionKeyStr, dumpOut)
+}
+
+func CreateSecurityDataWithSM(pwd string, encryptionKeyStr string, dumpOut io.Writer) (string, error) {
+	//pwd := values.Get("password")
 
 	// function getEncryptPwd(pwd) {
 	//     var encryptPwd = "";
@@ -99,7 +110,7 @@ func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string, dumpOu
 
 	_, err := vm.RunString(smJs)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	var random = "cyKzsQfFnT"
@@ -107,36 +118,36 @@ func CreateSecurityDataWithSM(values url.Values, encryptionKeyStr string, dumpOu
         var sm3Pwd = Sm3Utils.encryptFromText("` + pwd + `")+"` + random + `"+ "` + pwd + `";
         sm2Utils.encryptFromText("` + encryptionKeyStr + `",sm3Pwd);`)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	s := a.Export()
 	if s == nil {
-		return nil, errors.New("加密失败")
+		return "", errors.New("加密失败")
 	}
-	fmt.Println(s)
-	values.Set("password", s.(string))
-	return values, nil
+	// fmt.Println(s)
+	// values.Set("password", )
+	return s.(string), nil
 }
 
-func CreateSecurityDataWithRsa(values url.Values, encryptionKeyStr string, dumpOut io.Writer) (url.Values, error) {
-	pwd := values.Get("password")
+func CreateSecurityDataWithRsa(pwd string, encryptionKeyStr string, dumpOut io.Writer) (string, error) {
+	// pwd := values.Get("password")
 
 	var keys = strings.Split(encryptionKeyStr, "#")
 	if len(keys) != 2 {
-		return nil, errors.New("encryptionKeyStr is invalid - '" + encryptionKeyStr + "'")
+		return "", errors.New("encryptionKeyStr is invalid - '" + encryptionKeyStr + "'")
 	}
 	var modulus = keys[0]
 	var exponent = keys[1]
 
 	if modulus == "" {
-		return nil, errors.New("m is empty")
+		return "", errors.New("m is empty")
 	}
 	if exponent == "" {
-		return nil, errors.New("e is empty")
+		return "", errors.New("e is empty")
 	}
 	if pwd == "" {
-		return nil, errors.New("pwd is empty")
+		return "", errors.New("pwd is empty")
 	}
 
 	//生成0-100之间的随机数
@@ -146,15 +157,17 @@ func CreateSecurityDataWithRsa(values url.Values, encryptionKeyStr string, dumpO
 
 	newPwd, err := createSecurityData3(modulus, exponent, envilope)
 	if err != nil {
-		return nil, err
+		return "", err
 	}
 
 	if dumpOut != nil {
-		io.WriteString(dumpOut, "use rsa, m="+modulus+", e="+exponent+", pwd="+pwd+", envilope="+envilope+", newPwd="+newPwd)
+		io.WriteString(dumpOut, "use rsa, m="+modulus+", e="+exponent+", pwd="+pwd+", envilope="+envilope+", newPwd="+newPwd+ "\r\n")
 	}
 
-	values.Set("password", newPwd)
-	return values, nil
+	// values.Set("password", newPwd)
+	// return values, nil
+
+	return newPwd, nil
 }
 
 func CreateSecurityDataOld(responseBody []byte, values url.Values) (url.Values, error) {
