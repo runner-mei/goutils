@@ -91,13 +91,6 @@ func makeClientXldwPortal(t testing.TB, out map[string]int, redirectAddress func
       JSESSIONID, _ := r.Cookie("JSESSIONID")
       excepted := "BD84B0BF9DF1C16DC0F0557077762DF4"
       if JSESSIONID == nil || JSESSIONID.Value != excepted {
-        urlstr := urlutil.Join(redirectAddress("http://21.11.13.6:17002"), "isc_sso/login?service=http%3A%2F%2F21.11.40.8%3A8080%2Fportal%2Fportal_um%2Frest%2Flogin%2F60F724B8FA46D631")
-        http.Redirect(w, r, urlstr, http.StatusFound)
-        fmt.Println(urlstr)
-        // Location: http://21.11.13.6:17002/
-        return
-      }
-
 
       http.SetCookie(w, &http.Cookie{
         Name: "JSESSIONID",
@@ -108,36 +101,53 @@ func makeClientXldwPortal(t testing.TB, out map[string]int, redirectAddress func
       })
 
 
+        urlstr := urlutil.Join(redirectAddress("http://21.11.13.6:17002"), "isc_sso/login?service=http%3A%2F%2F21.11.40.8%3A8080%2Fportal%2Fportal_um%2Frest%2Flogin%2F60F724B8FA46D631")
+        http.Redirect(w, r, urlstr, http.StatusFound)
+        fmt.Println(urlstr)
+        // Location: http://21.11.13.6:17002/
+        return
+      }
+
+
+
       http.Redirect(w, r, urlutil.Join(redirectAddress("http://21.11.40.8:8080"), "/portal/portal-web/rest/portal-face"), http.StatusFound)
       // Location: http://21.11.13.6:17002/
       return
   }))
   mux.Handle("/portal/portal_um/rest/login/60F724B8FA46D631", http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
     
+      fmt.Println("================")
+      fmt.Println(r.RequestURI)
       queryParams := r.URL.Query()
       ticket := queryParams.Get("ticket")
       excepted := "ST-1701-XQLwcaHcrZOHzHp2tF1i-10.242.0.1"
       if ticket != excepted {
-        fmt.Println("Post, ticket")
-        fmt.Println("want:", excepted)
-        fmt.Println(" got:", ticket)
-        http.Error(w,  "ticket fail\r\nwant:"+ excepted+"\r\n got:"+ ticket, http.StatusInternalServerError)
-        return
+        JSESSIONID, _ := r.Cookie("JSESSIONID")
+        excepted = "BD84B0BF9DF1C16DC0F0557077762DF4"
+        if JSESSIONID == nil || JSESSIONID.Value != excepted {
+          fmt.Println("Post, ticket")
+          fmt.Println("want:", excepted)
+          fmt.Println(" got:", JSESSIONID)
+          if JSESSIONID == nil {
+            http.Error(w,  "JSESSIONID missing", http.StatusInternalServerError)
+          } else {
+            http.Error(w,  "JSESSIONID fail\r\nwant:"+ excepted+"\r\n got:"+ JSESSIONID.Value, http.StatusInternalServerError) 
+          }
+          return
+        }
+
+          urlstr := "http://21.11.40.8:8080/portal"
+          http.Redirect(w, r, strings.Replace(urlstr, "http://21.11.40.8:8080", redirectAddress("http://21.11.40.8:8080"), -1), http.StatusFound)
+
+          return
+        // fmt.Println("Post, ticket")
+        // fmt.Println("want:", excepted)
+        // fmt.Println(" got:", ticket)
+        // http.Error(w,  "ticket fail\r\nwant:"+ excepted+"\r\n got:"+ ticket, http.StatusInternalServerError)
+        // return
       }
 
-      JSESSIONID, _ := r.Cookie("JSESSIONID")
-      excepted = "BD84B0BF9DF1C16DC0F0557077762DF4"
-      if JSESSIONID == nil || JSESSIONID.Value != excepted {
-        fmt.Println("Post, ticket")
-        fmt.Println("want:", excepted)
-        fmt.Println(" got:", JSESSIONID)
-        if JSESSIONID == nil {
-          http.Error(w,  "JSESSIONID missing", http.StatusInternalServerError)
-        } else {
-          http.Error(w,  "JSESSIONID fail\r\nwant:"+ excepted+"\r\n got:"+ JSESSIONID.Value, http.StatusInternalServerError) 
-        }
-        return
-      }
+
       http.SetCookie(w, &http.Cookie{
         Name: "JSESSIONID",
         Value: "BD84B0BF9DF1C16DC0F0557077762DF4",
@@ -240,8 +250,9 @@ func makeClientXldwSSO(t testing.TB, out map[string]int, redirectAddress func(st
         t.Error("want:", value)
       }
 
-      if value := form.Get("password"); value != "sunwei" {
-        t.Error("want:", "72ef758a29c5e4cb4ccfc5239e737a7b16c29c65d672c5c618f15aedeb9c9c240eeb11ed9caf3da57b8b7a1f0067720659914ec6ced967f79278b5655df5c9e1a106936c4a8f0a2ffd9b35d305d64ee9c83d0b9c793cc39e15eb22063e4ce7a88aca23a7822822f13c2704cf8745a3d144a5fec54a453e69cd6d85a1e7b5f7b9")
+      exceptedPass := "326e7251750eb48bf1cc128253e06a8795d5fd3f9a9630d8d4a9bbdf43f9cefa3e9946a6b5720a51ce7d5c8186a970e9f89898c0ff18591e261b98bc39d39e6645258a99d1df50d5d476d122e3a3b7da79ecf755dcfe5b10cdf7942854de26d75615671e5af4fa690482e30eb238c0828e2a143fe5c04005ce4ae797aacf53e6"
+      if value := form.Get("password"); value != exceptedPass {
+        t.Error("want:", exceptedPass)
         t.Error(" got:", value)
       }
       if value := form.Get("messageCode"); value != "" {
@@ -281,10 +292,11 @@ func makeClientXldwSSO(t testing.TB, out map[string]int, redirectAddress func(st
         return
       }
 
-
-
       urlstr := "http://21.11.40.8:8080/portal/portal_um/rest/login/60F724B8FA46D631?ticket=ST-1701-XQLwcaHcrZOHzHp2tF1i-10.242.0.1"
-      http.Redirect(w, r, strings.Replace(urlstr, "http://21.11.40.8:8080", redirectAddress("http://21.11.40.8:8080"), -1), http.StatusTemporaryRedirect)
+      urlstr = strings.Replace(urlstr, "http://21.11.40.8:8080", redirectAddress("http://21.11.40.8:8080"), -1)
+
+      fmt.Println("=======redirect", urlstr)
+      http.Redirect(w, r, urlstr, http.StatusTemporaryRedirect)
     default:
       http.Error(w,  "method not allow - "+ r.RequestURI, http.StatusInternalServerError)
     }
