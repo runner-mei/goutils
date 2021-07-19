@@ -41,7 +41,10 @@ var (
 		[]byte("Username:"),
 		[]byte("username:"),
 		[]byte("login:"),
-		[]byte("login as:")}
+		[]byte("login as:"),
+		[]byte("login name:"),
+		[]byte("Login Name:"),
+	}
 	defaultPasswordPrompts = [][]byte{[]byte("Password:"), []byte("password:")}
 	defaultPrompts         = [][]byte{[]byte(">"), []byte("$"), []byte("#")}
 	defaultErrorPrompts    = [][]byte{

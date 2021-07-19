@@ -245,7 +245,9 @@ func (w withWriteCloser) SendPassword(s []byte) error {
 		return err
 	}
 	for _, pw := range w.passwordWriters {
-		pw.SendPassword(s)
+		if err := pw.SendPassword(s); err != nil {
+			return err
+		}
 	}
 
 	for _, npw := range w.noPasswordWriters {

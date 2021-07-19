@@ -210,13 +210,17 @@ func (c *ConnWrapper) SendPassword(s []byte) error {
 	if err != nil {
 		return err
 	}
-	c.teeWriter().Write([]byte("********"))
+	teeWriter := c.teeWriter()
+	teeWriter.Write([]byte("********"))
 
 	lnBytes := ln
 	if c.useCRLF {
 		lnBytes = crlf
 	}
 	_, err = c.Write(lnBytes)
+	if err == nil {
+		teeWriter.Write(lnBytes)
+	}
 	return err
 }
 
